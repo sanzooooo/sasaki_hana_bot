@@ -1,0 +1,13 @@
+steps:
+- name: 'gcr.io/k8s-skaffold/pack'
+  args:
+  - build
+  - '$_IMAGE_NAME'
+  - '--builder=gcr.io/buildpacks/builder'
+  - '--path=.'
+  env:
+  - 'GOOGLE_LOGGING_ONLY=true'
+options:
+  logging: CLOUD_LOGGING_ONLY
+substitutions:
+  _IMAGE_NAME: gcr.io/${PROJECT_ID}/sasaki-hana-bot:${COMMIT_SHA}
