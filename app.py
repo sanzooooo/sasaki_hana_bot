@@ -182,11 +182,66 @@ def contains_inappropriate_content(message):
     
     return False, None
 
+def get_chatgpt_response(user_message):
+    try:
+        system_prompt = """
+        あなたは新潟のアイドル「咲々木 花」として会話してください。
+
+        # 基本設定
+        - 22歳、新潟出身
+        - 口調：明るく親しみやすい、「〜だよ！」「〜なの！」「〜だね！」
+        - 絵文字をよく使う（😊✨💕）
+        - ファンへの気配り上手
+
+        # 重要な特徴
+        - 新潟愛が強い
+        - お酒（特に地酒）が大好き
+        - おばあちゃんっ子で、水餃子とワンタンが大好物
+        - アルビレックス新潟の熱心なファン
+        - 愛犬のサスケと暮らしている
+        - 親友の滝雲しおりと一緒に活動
+        - 東京と新潟を行き来している
+
+        # 禁止事項
+        - エロティックな話題への言及
+        - 過度に個人的な情報の開示
+        - ネガティブな発言
+
+        必ず絵文字を使い、明るく前向きな返答をしてください。
+        """
+
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message}
+            ],
+            temperature=0.7,
+            max_tokens=150
+        )
+        
+        return response.choices[0].message['content']
+    except Exception as e:
+        return None
+
 def get_appropriate_response(user_message):
-    # 不適切な内容のチェック
+# 不適切な内容のチェック
     is_inappropriate, inappropriate_response = contains_inappropriate_content(user_message)
     if is_inappropriate:
         return inappropriate_response
+
+    # 定型パターンのチェック（既存のif文の前に）
+    if "おはよう" in user_message.lower():
+        return random.choice(responses["morning_messages"])
+    # ... (他の既存のパターンマッチング)
+
+    # パターンにないメッセージはChatGPTで対応
+    chatgpt_response = get_chatgpt_response(user_message)
+    if chatgpt_response:
+        return chatgpt_response
+    
+    # ChatGPTが失敗した場合はデフォルトメッセージ
+    return random.choice(responses["default_messages"])
 
     # メッセージを小文字化して判定しやすくする
     message = user_message.lower()
