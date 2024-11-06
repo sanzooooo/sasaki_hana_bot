@@ -2,12 +2,13 @@ steps:
 - name: 'gcr.io/k8s-skaffold/pack'
   args:
   - build
-  - '$_IMAGE_NAME'
-  - '--builder=gcr.io/buildpacks/builder'
+  - '${_IMAGE_NAME}'
+  - '--builder=gcr.io/buildpacks/builder:v1'
   - '--path=.'
+  - '--env=GOOGLE_ENTRYPOINT=gunicorn app:app'
   env:
   - 'GOOGLE_LOGGING_ONLY=true'
 options:
   logging: CLOUD_LOGGING_ONLY
 substitutions:
-  _IMAGE_NAME: gcr.io/${PROJECT_ID}/sasaki-hana-bot:${COMMIT_SHA}
+  _IMAGE_NAME: asia-northeast1-docker.pkg.dev/${PROJECT_ID}/cloud-run-source-deploy/sasaki-hana-bot:${COMMIT_SHA}
