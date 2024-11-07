@@ -301,18 +301,12 @@ def get_appropriate_response(user_message):
 def callback():
     signature = request.headers['X-Line-Signature']
     body = request.get_data(as_text=True)
-
     try:
         handler.handle(body, signature)
     except InvalidSignatureError:
         abort(400)
-
     return 'OK'
 
-@handler.add(MessageEvent, message=TextMessage)
-def handle_message(event):
-    user_message = event.message.text
-    
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     # プロフィール情報の取得（可能な場合）
@@ -325,7 +319,7 @@ def handle_message(event):
     # メッセージを取得
     user_message = event.message.text
     
-    # 応答の生成
+    # 応答の生成（これが重要！）
     response = get_appropriate_response(user_message)
     
     # メッセージの送信
@@ -334,7 +328,7 @@ def handle_message(event):
         TextSendMessage(text=response)
     )
 
-if __name__ == "__main__":    # ← アスタリスクを__に修正
+if __name__ == "__main__":    # アスタリスクを__に修正
     # ポート番号はcloud runの環境変数から取得
     port = int(os.getenv("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
