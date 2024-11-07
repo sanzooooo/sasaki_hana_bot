@@ -13,7 +13,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # LINE Botの設定
-line_bot_api = YLewHmcR3Obqe7tQFowCLhIdd8ahNrhQmV1QWD67W7pohNplru4LtXyg/MUtUcXva89FfisL706HefagS7Tmnf+fxSscuqmoLi7qpgDmjDl0Jx5URkq5IFQBeVUmiw8B06xU+wQX4e/q2i9swsDdQQdB04t89/1O/w1cDnyilFU=
+line_bot_api = LineBotApi('YLewHmcR3Obqe7tQFowCLhIdd8ahNrhQmV1QWD67W7pohNplru4LtXyg/MUtUcXva89FfisL706HefagS7Tmnf+fxSscuqmoLi7qpgDmjDl0Jx5URkq5IFQBeVUmiw8B06xU+wQX4e/q2i9swsDdQQdB04t89/1O/w1cDnyilFU=')
 handler = bec56562d5ce4583e42307887c94fd40
 
 # 応答メッセージの定義
