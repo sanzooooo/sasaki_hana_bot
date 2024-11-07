@@ -5,16 +5,20 @@ from linebot.models import MessageEvent, TextMessage, TextSendMessage
 import os
 from dotenv import load_dotenv
 import random
+import openai  # 追加
 
 # 環境変数の読み込み
 load_dotenv()
+
+# OpenAIの設定
+openai.api_key = os.getenv('OPENAI_API_KEY')
 
 # Flaskのインスタンスを作成
 app = Flask(__name__)
 
 # LINE Botの設定
-line_bot_api = LineBotApi('YLewHmcR3Obqe7tQFowCLhIdd8ahNrhQmV1QWD67W7pohNplru4LtXyg/MUtUcXva89FfisL706HefagS7Tmnf+fxSscuqmoLi7qpgDmjDl0Jx5URkq5IFQBeVUmiw8B06xU+wQX4e/q2i9swsDdQQdB04t89/1O/w1cDnyilFU=')
-handler = bec56562d5ce4583e42307887c94fd40
+line_bot_api = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN'))
+handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 
 # 応答メッセージの定義
 responses = {
@@ -309,12 +313,17 @@ def callback():
 def handle_message(event):
     user_message = event.message.text
     
+@handler.add(MessageEvent, message=TextMessage)
+def handle_message(event):
     # プロフィール情報の取得（可能な場合）
     try:
         user_profile = line_bot_api.get_profile(event.source.user_id)
         user_name = user_profile.display_name
     except:
         user_name = "あなた"
+    
+    # メッセージを取得
+    user_message = event.message.text
     
     # 応答の生成
     response = get_appropriate_response(user_message)
@@ -325,12 +334,7 @@ def handle_message(event):
         TextSendMessage(text=response)
     )
 
-if __name__ == "__main__":
-    app.run(debug=True)
-
-        TextSendMessage(text=event.message.text))
-
-if __name__ == "__main__":
+if __name__ == "__main__":    # ← アスタリスクを__に修正
     # ポート番号はcloud runの環境変数から取得
     port = int(os.getenv("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
