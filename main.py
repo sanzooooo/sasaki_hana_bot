@@ -5,7 +5,7 @@ from linebot.models import MessageEvent, TextMessage, TextSendMessage
 import os
 from dotenv import load_dotenv
 import random
-import openai  # 追加
+import openai
 
 # 環境変数の読み込み
 load_dotenv()
@@ -108,6 +108,7 @@ responses = {
         "最新グッズの情報は、SNSで配信してるから要チェック！わたしの想いを込めて作ってるんだ✨"
     ]
 }
+
 def contains_inappropriate_content(message):
     # 不適切な内容のパターン
     inappropriate_patterns = {
@@ -149,7 +150,8 @@ def contains_inappropriate_content(message):
             "わたしはアイドルだから、そういう話は控えめにしたいな...！他のお話しよ？✨",
             "あの、その話はちょっと...！🙈 新潟の話とか、音楽の話の方がいいな！"
         ],
-        "デート誘い": [
+
+    "デート誘い": [
             "ごめんね、わたしはアイドルだからそういうのは...😅 でも、ライブには来てね！✨",
             "わたしはみんなのアイドルだから、そういうのは難しいの...！またライブで会おうね！😊",
             "その気持ちは嬉しいけど、わたしはアイドルとして頑張りたいの！応援してくれたら嬉しいな💕"
@@ -229,23 +231,12 @@ def get_chatgpt_response(user_message):
         return None
 
 def get_appropriate_response(user_message):
-# 不適切な内容のチェック
+    print("Received message:", user_message)  # デバッグ用
+
+    # 不適切な内容のチェック
     is_inappropriate, inappropriate_response = contains_inappropriate_content(user_message)
     if is_inappropriate:
         return inappropriate_response
-
-    # 定型パターンのチェック（既存のif文の前に）
-    if "おはよう" in user_message.lower():
-        return random.choice(responses["morning_messages"])
-    # ... (他の既存のパターンマッチング)
-
-    # パターンにないメッセージはChatGPTで対応
-    chatgpt_response = get_chatgpt_response(user_message)
-    if chatgpt_response:
-        return chatgpt_response
-    
-    # ChatGPTが失敗した場合はデフォルトメッセージ
-    return random.choice(responses["default_messages"])
 
     # メッセージを小文字化して判定しやすくする
     message = user_message.lower()
@@ -293,8 +284,13 @@ def get_appropriate_response(user_message):
     # 新潟関連
     if any(word in message for word in ["新潟", "にいがた", "古町", "万代"]):
         return random.choice(responses["niigata_love_messages"])
+
+    # パターンにないメッセージはChatGPTで対応
+    chatgpt_response = get_chatgpt_response(user_message)
+    if chatgpt_response:
+        return chatgpt_response
     
-    # デフォルトの応答
+    # ChatGPTが失敗した場合はデフォルトメッセージ
     return random.choice(responses["default_messages"])
 
 @app.route("/callback", methods=['POST'])
@@ -328,7 +324,7 @@ def handle_message(event):
         TextSendMessage(text=response)
     )
 
-if __name__ == "__main__":    # アスタリスクを__に修正
+if __name__ == "__main__":
     # ポート番号はcloud runの環境変数から取得
     port = int(os.getenv("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
