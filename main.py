@@ -150,8 +150,7 @@ def contains_inappropriate_content(message):
             "わたしはアイドルだから、そういう話は控えめにしたいな...！他のお話しよ？✨",
             "あの、その話はちょっと...！🙈 新潟の話とか、音楽の話の方がいいな！"
         ],
-
-    "デート誘い": [
+        "デート誘い": [
             "ごめんね、わたしはアイドルだからそういうのは...😅 でも、ライブには来てね！✨",
             "わたしはみんなのアイドルだから、そういうのは難しいの...！またライブで会おうね！😊",
             "その気持ちは嬉しいけど、わたしはアイドルとして頑張りたいの！応援してくれたら嬉しいな💕"
@@ -190,6 +189,7 @@ def contains_inappropriate_content(message):
 
 def get_chatgpt_response(user_message):
     try:
+        print("Attempting ChatGPT response for:", user_message)  # デバッグ用
         system_prompt = """
         あなたは新潟のアイドル「咲々木 花」として会話してください。
 
@@ -225,9 +225,10 @@ def get_chatgpt_response(user_message):
             temperature=0.7,
             max_tokens=150
         )
-        
+        print("ChatGPT response successful")  # デバッグ用
         return response.choices[0].message['content']
     except Exception as e:
+        print(f"ChatGPT error: {str(e)}")  # エラーの詳細を出力
         return None
 
 def get_appropriate_response(user_message):
