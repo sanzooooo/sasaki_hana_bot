@@ -277,10 +277,28 @@ def get_appropriate_response(user_message):
     if is_inappropriate:
         return inappropriate_response
 
-    # パターンマッチングで対応できるメッセージを先にチェック
+    # メッセージを小文字化
     message = user_message.lower()
     
     print("DEBUG: Starting pattern matching")
+    
+    # パターンマッチング
+    if "おはよう" in message:
+        return random.choice(responses["morning_messages"])
+        
+    # ... [他のパターンマッチング]
+    
+    # パターンマッチしない場合はChatGPT試行
+    print("DEBUG: Attempting ChatGPT response")
+    chatgpt_response = get_chatgpt_response(user_message)
+    
+    # ChatGPTの応答があればそれを使用
+    if chatgpt_response:
+        return chatgpt_response
+        
+    # ChatGPTが失敗した場合のみデフォルトレスポンス
+    print("DEBUG: Using default response")
+    return random.choice(responses["default_messages"])
     
     # 各種パターンマッチング（変更なし）
     if "おはよう" in message:
@@ -343,14 +361,32 @@ def get_appropriate_response(user_message):
         return random.choice(responses["niigata_love_messages"])
 
     # ChatGPT試行前のデバッグ出力
-    print("DEBUG: Attempting ChatGPT response")  # 追加
-    chatgpt_response = get_chatgpt_response(user_message)
-    print(f"DEBUG: ChatGPT response: {chatgpt_response}")  # 追加
-    if chatgpt_response:
-        return chatgpt_response
-    
-    print("DEBUG: Using default response")  # 追加
-    return random.choice(responses["default_messages"])
+def get_chatgpt_response(user_message: str) -> Optional[str]:
+    try:
+        print("DEBUG: Creating OpenAI client")
+        client = OpenAI()
+        
+        print("DEBUG: Sending request to OpenAI")
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "あなたは新潟のアイドル「咲々木 花」です。明るく、絵文字を使って返信してください。"
+                },
+                {"role": "user", "content": user_message}
+            ],
+            temperature=0.7,
+            max_tokens=150
+        )
+        
+        result = response.choices[0].message.content
+        print(f"DEBUG: OpenAI response received: {result[:50]}...")
+        return result
+        
+    except Exception as e:
+        print(f"DEBUG: ChatGPT error occurred: {str(e)}")
+        return None
 
 @app.route("/callback", methods=['POST'])
 def callback():
