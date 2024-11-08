@@ -3,3 +3,4 @@ line-bot-sdk
 openai
 python-dotenv
 gunicorn
+openai>=1.0.0
