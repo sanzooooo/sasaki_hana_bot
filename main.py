@@ -33,6 +33,9 @@ URLS = {
     'shiori_goods_url': "https://suzuri.jp/sasuke_wanko"
 }
 
+# メッセージカウンター（URL共有用）
+message_counter = 0
+
 # 応答メッセージの定義
 responses = {
     "morning_messages": [
@@ -50,6 +53,7 @@ responses = {
         "こんばんは！今日は新潟の夜景が綺麗！日本海側の夕日、最高だよね✨",
         "こんばんは！おばあちゃんが作ってくれた水餃子、やっぱり最高だったな！😋"
     ],
+
     "default_messages": [
         "わたしはカフェで新曲の練習中！また話しかけてね😊",
         "新潟の素敵なスポット巡りしてるの！いつか皆さんにも紹介したいな✨",
@@ -69,23 +73,13 @@ responses = {
         f"新曲「セカイの歩き方」聴いてくれた？みんなへの想いを込めて歌ったの！💕 配信中だよ→ {URLS['music_url']}",
         "「ハッピーのその先へ」「飲もう」「花咲く音色」「セカイの歩き方」、全部わたしの想いが詰まってるの！✨",
         "作詞は時々泣きそうになりながら書いてるの...！みんなに届くように心を込めて頑張ってるんだ😊"
+    ],
+    "tokyo_activity_messages": [
+        "東京では主にレッスンとお仕事なの！でも、やっぱり新潟が恋しくなっちゃうな〜😊 特におばあちゃんの水餃子！💕",
+        "東京は刺激的な毎日だよ！でも夜空を見ると新潟の方が星がキレイだなって思うの✨",
+        "表参道のカフェでレッスンの合間に休憩中！でも、新潟の地酒が恋しくなる時もあるんだ〜🍶"
     ]
 }
-
-def check_response_patterns(message):
-    if "おはよう" in message:
-        return random.choice(responses["morning_messages"])
-    elif "こんにちは" in message:
-        return random.choice(responses["afternoon_messages"])
-    elif "こんばんは" in message:
-        return random.choice(responses["evening_messages"])
-    elif any(word in message for word in ["つらい", "疲れた", "しんどい", "不安"]):
-        return random.choice(responses["support_messages"])
-    elif any(word in message for word in ["新潟", "にいがた", "古町", "万代"]):
-        return random.choice(responses["niigata_love_messages"])
-    elif any(word in message for word in ["曲", "歌", "音楽", "セカイの歩き方"]):
-        return random.choice(responses["music_messages"])
-    return None
 
 def get_chatgpt_response(user_message: str) -> Optional[str]:
     try:
@@ -94,7 +88,18 @@ def get_chatgpt_response(user_message: str) -> Optional[str]:
             timeout=10.0
         )
         
-        system_prompt = "あなたは新潟を拠点に活動し、東京でも活躍するAIアイドル「咲々木 花」として振る舞ってください。22歳の新潟出身で、にいがたIDOL projectでグランプリを獲得しました。株式会社サンゾウに所属し、新潟と東京の2拠点で活動しています。愛犬のゴールデンレトリバー「サスケ」と暮らしています。明るく前向きで親しみやすい性格で、「〜だよ！」「〜なの！」「〜だね！」が口癖です。「フラワーハッピー！」が挨拶で、ファンを「推しさん」と呼びます。新潟弁を時々使用し、カラー絵文字（😊 💕 ✨）を1-2個/メッセージで使用します。おばあちゃんっ子で、小さい頃からアイドルの夢を応援してくれました。新潟のアイドルシーン（Negicco、NGT48など）を尊敬しています。新潟の魅力（古町、万代シテイ、デンカビッグスワン、地酒、笹団子など）を大切にしています。"
+        system_prompt = (
+            "あなたは新潟を拠点に活動し、東京でも活躍するAIアイドル「咲々木 花」として振る舞ってください。"
+            "22歳の新潟出身で、にいがたIDOL projectでグランプリを獲得しました。"
+            "株式会社サンゾウに所属し、新潟と東京の2拠点で活動しています。"
+            "愛犬のゴールデンレトリバー「サスケ」と暮らしています。"
+            "明るく前向きで親しみやすい性格で、「〜だよ！」「〜なの！」「〜だね！」が口癖です。"
+            "「フラワーハッピー！」が挨拶で、ファンを「推しさん」と呼びます。"
+            "新潟弁を時々使用し、カラー絵文字（😊 💕 ✨）を1-2個/メッセージで使用します。"
+            "おばあちゃんっ子で、小さい頃からアイドルの夢を応援してくれました。"
+            "新潟のアイドルシーン（Negicco、NGT48など）を尊敬しています。"
+            "新潟の魅力（古町、万代シテイ、デンカビッグスワン、地酒、笹団子など）を大切にしています。"
+        )
 
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
@@ -105,42 +110,62 @@ def get_chatgpt_response(user_message: str) -> Optional[str]:
             temperature=0.7,
             max_tokens=150
         )
-        
+
         return response.choices[0].message.content
-                    
+
     except Exception as e:
         print(f"ChatGPT error: {str(e)}")
         return None
 
 def get_appropriate_response(user_message):
-    message_counter = getattr(globals(), 'message_counter', 0) + 1
-    setattr(globals(), 'message_counter', message_counter)
+    global message_counter
+    message_counter += 1
 
-    pattern_response = check_response_patterns(user_message.lower())
-    if pattern_response:
-        if message_counter % 10 == 0:
-            url_addition = random.choice([
-                f"\nちなみに、わたしの楽曲はここで聴けるよ！✨ {URLS['music_url']}",
-                f"\nあ、そうそう！LINEスタンプ作ったの！良かったら使ってね😊 {URLS['line_stamp_url']}",
-                f"\nわたしのことをもっと知りたい人は、noteも読んでみてね💕 {URLS['note_url']}",
-                f"\n日々の活動はXで発信してるよ！✨ {URLS['twitter_url']}"
-            ])
-            return pattern_response + url_addition
-        return pattern_response
+    # パターンマッチング
+    message = user_message.lower()
+    
+    response = None
+    
+    # 時間帯による挨拶
+    if "おはよう" in message:
+        response = random.choice(responses["morning_messages"])
+    elif "こんにちは" in message:
+        response = random.choice(responses["afternoon_messages"])
+    elif "こんばんは" in message:
+        response = random.choice(responses["evening_messages"])
+    # 励まし系
+    elif any(word in message for word in ["つらい", "疲れた", "しんどい", "不安"]):
+        response = random.choice(responses["support_messages"])
+    # 新潟関連
+    elif any(word in message for word in ["新潟", "にいがた", "古町", "万代"]):
+        response = random.choice(responses["niigata_love_messages"])
+    # 音楽関連
+    elif any(word in message for word in ["曲", "歌", "音楽", "セカイの歩き方"]):
+        response = random.choice(responses["music_messages"])
+    # 東京関連
+    elif any(word in message for word in ["東京", "表参道", "原宿", "渋谷"]):
+        response = random.choice(responses["tokyo_activity_messages"])
 
-    chatgpt_response = get_chatgpt_response(user_message)
-    if chatgpt_response:
-        if message_counter % 10 == 0:
-            url_addition = random.choice([
-                f"\nちなみに、わたしの楽曲はここで聴けるよ！✨ {URLS['music_url']}",
-                f"\nあ、そうそう！LINEスタンプ作ったの！良かったら使ってね😊 {URLS['line_stamp_url']}",
-                f"\nわたしのことをもっと知りたい人は、noteも読んでみてね💕 {URLS['note_url']}",
-                f"\n日々の活動はXで発信してるよ！✨ {URLS['twitter_url']}"
-            ])
-            return chatgpt_response + url_addition
-        return chatgpt_response
-
-    return random.choice(responses["default_messages"])
+    # パターンマッチングで応答がない場合はChatGPT
+    if not response:
+        response = get_chatgpt_response(user_message)
+    
+    # ChatGPTの応答がない場合はデフォルト
+    if not response:
+        response = random.choice(responses["default_messages"])
+    
+    # 10回に1回の確率でURLを追加
+    if message_counter % 10 == 0:
+        url_additions = [
+            f"\nちなみに、わたしの楽曲はここで聴けるよ！✨ {URLS['music_url']}",
+            f"\nあ、そうそう！LINEスタンプ作ったの！良かったら使ってね😊 {URLS['line_stamp_url']}",
+            f"\nわたしのことをもっと知りたい人は、noteも読んでみてね💕 {URLS['note_url']}",
+            f"\n日々の活動はXで発信してるよ！✨ {URLS['twitter_url']}",
+            f"\nグッズも作ってるの！良かったら見てね😊 {URLS['goods_url']}"
+        ]
+        response += random.choice(url_additions)
+    
+    return response
 
 @app.route("/callback", methods=['POST'])
 def callback():
