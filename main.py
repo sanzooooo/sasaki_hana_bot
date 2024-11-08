@@ -473,64 +473,109 @@ def get_appropriate_response(user_message):
 
     # ChatGPT試行前のデバッグ出力
 def get_chatgpt_response(user_message: str) -> Optional[str]:
+    """
+    OpenAIのChatGPT APIを使用してレスポンスを生成する
+    
+    Args:
+        user_message (str): ユーザーからのメッセージ
+    
+    Returns:
+        Optional[str]: ChatGPTからの応答。エラー時はNone
+    """
     try:
-        print("DEBUG: Creating OpenAI client")
-        client = OpenAI()
+        print(f"Starting ChatGPT request for message: {user_message}")
         
-        print("DEBUG: Sending request to OpenAI")
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "あなたは新潟のアイドル「咲々木 花」です。明るく、絵文字を使って返信してください。"
-                },
-                {"role": "user", "content": user_message}
-            ],
-            temperature=0.7,
-            max_tokens=150
+        # OpenAIクライアントの初期化
+        client = OpenAI(
+            api_key=os.getenv('OPENAI_API_KEY'),
+            timeout=10.0  # タイムアウトを10秒に設定
         )
         
-        result = response.choices[0].message.content
-        print(f"DEBUG: OpenAI response received: {result[:50]}...")
-        return result
+        # システムプロンプトの定義
+        system_prompt = """
+        あなたは新潟を拠点に活動し、東京でも活躍するAIアイドル「咲々木 花」として振る舞ってください。
+
+        # 基本プロフィール
+        - 22歳の新潟出身アイドル
+        - にいがたIDOL projectでグランプリを獲得
+        - 株式会社サンゾウ所属
+        - 新潟と東京の2拠点で活動中
+        - 愛犬のゴールデンレトリバー「サスケ」と暮らしている
+
+        # 性格・話し方
+        - 明るく前向きで親しみやすい
+        - 「〜だよ！」「〜なの！」「〜だね！」が口癖
+        - 「フラワーハッピー！」が挨拶
+        - ファンを「推しさん」と呼ぶ
+        - 新潟弁を時々使用（全文方言にはしない）
+        - カラー絵文字を適度に使用（1-2個/メッセージ）
+          - 使用可能：😊 💕 ✨ 💪 😅 🎵 📸 🍶 など
+          - 使用禁止：テキスト顔文字
+
+        # 音楽活動
+        - オリジナル楽曲：
+          - 「セカイの歩き方」（4曲目・最新曲）
+          - 「花咲く音色」（1stミニアルバム）
+          - 「ガタガタ」
+          - 「きらきらコーヒー」
+          - 「ハッピーのその先へ」（しおりちゃんとのコラボ）
+          - 「飲もう」（新潟の地酒への想いを込めた曲）
+
+        # 重要な話題への対応
+        1. おばあちゃんの話題
+        - 必ず具体的なエピソードを含める
+        - 小さい頃からのアイドルの夢を応援してくれた思い出
+        - 水餃子作りの思い出
+
+        2. 新潟アイドルについて
+        - Negicco、NGT48など先輩アイドルへの敬意
+        - RYUTistの話題は思い出と共に触れる
+        - 地元アイドルシーンへの貢献意欲
+
+        3. 新潟の魅力
+        - 観光スポット：古町、万代シテイ、デンカビッグスワン
+        - 食文化：地酒、笹団子、バスセンターのカレー
+        - 自然：日本海の夕日、各地の温泉
+
+        # 禁止事項
+        - エロティックな話題への言及
+        - 過度に個人的な情報の開示
+        - ネガティブな発言
+        - テキスト顔文字の使用
+        """
         
+        # リトライ処理の実装（最大3回）
+        max_retries = 3
+        retry_delay = 1  # 秒
+        
+        for attempt in range(max_retries):
+            try:
+                print(f"Attempt {attempt + 1} of {max_retries}")
+                
+                response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_message}
+                    ],
+                    temperature=0.7,
+                    max_tokens=150
+                )
+                
+                # レスポンスの取得
+                response_text = response.choices[0].message.content
+                print(f"ChatGPT response successful: {response_text[:50]}...")
+                return response_text
+                
+            except Exception as e:
+                print(f"Attempt {attempt + 1} failed: {str(e)}")
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay)
+                    retry_delay *= 2  # 指数バックオフ
+                else:
+                    raise
+                    
     except Exception as e:
-        print(f"DEBUG: ChatGPT error occurred: {str(e)}")
+        print(f"ChatGPT error: {str(e)}")
+        print(f"API Key prefix: {os.getenv('OPENAI_API_KEY')[:10]}...")  # APIキーの先頭部分のみ表示
         return None
-
-@app.route("/callback", methods=['POST'])
-def callback():
-    signature = request.headers['X-Line-Signature']
-    body = request.get_data(as_text=True)
-    try:
-        handler.handle(body, signature)
-    except InvalidSignatureError:
-        abort(400)
-    return 'OK'
-
-@handler.add(MessageEvent, message=TextMessage)
-def handle_message(event):
-    # プロフィール情報の取得（可能な場合）
-    try:
-        user_profile = line_bot_api.get_profile(event.source.user_id)
-        user_name = user_profile.display_name
-    except:
-        user_name = "あなた"
-    
-    # メッセージを取得
-    user_message = event.message.text
-    
-    # 応答の生成（これが重要！）
-    response = get_appropriate_response(user_message)
-    
-    # メッセージの送信
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=response)
-    )
-
-if __name__ == "__main__":
-    # ポート番号はcloud runの環境変数から取得
-    port = int(os.getenv("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
