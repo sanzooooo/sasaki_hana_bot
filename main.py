@@ -232,15 +232,19 @@ def get_chatgpt_response(user_message):
         return None
 
 def get_appropriate_response(user_message):
-    print("Received message:", user_message)  # デバッグ用
+    print(f"DEBUG: Starting response generation for: {user_message}")  # 追加
 
     # 不適切な内容のチェック
     is_inappropriate, inappropriate_response = contains_inappropriate_content(user_message)
+    print(f"DEBUG: Inappropriate check result: {is_inappropriate}")  # 追加
     if is_inappropriate:
         return inappropriate_response
 
     # メッセージを小文字化して判定しやすくする
     message = user_message.lower()
+    
+    # パターンマッチング前のデバッグ出力
+    print("DEBUG: Starting pattern matching")  # 追加
     
     # 時間帯に応じた挨拶
     if "おはよう" in message:
@@ -286,12 +290,14 @@ def get_appropriate_response(user_message):
     if any(word in message for word in ["新潟", "にいがた", "古町", "万代"]):
         return random.choice(responses["niigata_love_messages"])
 
-    # パターンにないメッセージはChatGPTで対応
+    # ChatGPT試行前のデバッグ出力
+    print("DEBUG: Attempting ChatGPT response")  # 追加
     chatgpt_response = get_chatgpt_response(user_message)
+    print(f"DEBUG: ChatGPT response: {chatgpt_response}")  # 追加
     if chatgpt_response:
         return chatgpt_response
     
-    # ChatGPTが失敗した場合はデフォルトメッセージ
+    print("DEBUG: Using default response")  # 追加
     return random.choice(responses["default_messages"])
 
 @app.route("/callback", methods=['POST'])
