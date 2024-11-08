@@ -5,13 +5,12 @@ from linebot.models import MessageEvent, TextMessage, TextSendMessage
 import os
 from dotenv import load_dotenv
 import random
-import openai
+from openai import OpenAI  # ここを変更
+import time  # 追加
+from typing import Optional  # 追加
 
 # 環境変数の読み込み
 load_dotenv()
-
-# OpenAIの設定
-openai.api_key = os.getenv('OPENAI_API_KEY')
 
 # Flaskのインスタンスを作成
 app = Flask(__name__)
@@ -187,9 +186,26 @@ def contains_inappropriate_content(message):
     
     return False, None
 
-def get_chatgpt_response(user_message):
+def get_chatgpt_response(user_message: str) -> Optional[str]:
+    """
+    OpenAIのChatGPT APIを使用してレスポンスを生成する
+    
+    Args:
+        user_message (str): ユーザーからのメッセージ
+    
+    Returns:
+        Optional[str]: ChatGPTからの応答。エラー時はNone
+    """
     try:
-        print("Attempting ChatGPT response for:", user_message)  # デバッグ用
+        print(f"Starting ChatGPT request for message: {user_message}")
+        
+        # OpenAIクライアントの初期化
+        client = OpenAI(
+            api_key=os.getenv('OPENAI_API_KEY'),
+            timeout=10.0  # タイムアウトを10秒に設定
+        )
+        
+        # システムプロンプトの定義
         system_prompt = """
         あなたは新潟のアイドル「咲々木 花」として会話してください。
 
@@ -215,20 +231,41 @@ def get_chatgpt_response(user_message):
 
         必ず絵文字を使い、明るく前向きな返答をしてください。
         """
-
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message}
-            ],
-            temperature=0.7,
-            max_tokens=150
-        )
-        print("ChatGPT response successful")  # デバッグ用
-        return response.choices[0].message['content']
+        
+        # リトライ処理の実装（最大3回）
+        max_retries = 3
+        retry_delay = 1  # 秒
+        
+        for attempt in range(max_retries):
+            try:
+                print(f"Attempt {attempt + 1} of {max_retries}")
+                
+                response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_message}
+                    ],
+                    temperature=0.7,
+                    max_tokens=150
+                )
+                
+                # レスポンスの取得
+                response_text = response.choices[0].message.content
+                print(f"ChatGPT response successful: {response_text[:50]}...")
+                return response_text
+                
+            except Exception as e:
+                print(f"Attempt {attempt + 1} failed: {str(e)}")
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay)
+                    retry_delay *= 2  # 指数バックオフ
+                else:
+                    raise
+                    
     except Exception as e:
-        print(f"ChatGPT error: {str(e)}")  # エラーの詳細を出力
+        print(f"ChatGPT error: {str(e)}")
+        print(f"API Key prefix: {os.getenv('OPENAI_API_KEY')[:10]}...")  # APIキーの先頭部分のみ表示
         return None
 
 def get_appropriate_response(user_message):
