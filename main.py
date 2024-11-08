@@ -331,8 +331,10 @@ system_prompt = """
 
 def get_appropriate_response(user_message):
         # URL共有カウンターの管理（実際の実装では永続化が必要）
-    global message_counter
-    message_counter = getattr(globals(), 'message_counter', 0) + 1
+        global message_counter
+        if not hasattr(globals(), 'message_counter'):
+            message_counter = 0
+        message_counter += 1
 
     # 不適切な内容のチェック
     is_inappropriate, inappropriate_response = contains_inappropriate_content(user_message)
