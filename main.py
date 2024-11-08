@@ -269,13 +269,28 @@ def get_chatgpt_response(user_message: str) -> Optional[str]:
         return None
 
 def get_appropriate_response(user_message):
-    print(f"DEBUG: Starting response generation for: {user_message}")  # 追加
+    print(f"DEBUG: Starting response generation for: {user_message}")
 
     # 不適切な内容のチェック
     is_inappropriate, inappropriate_response = contains_inappropriate_content(user_message)
-    print(f"DEBUG: Inappropriate check result: {is_inappropriate}")  # 追加
+    print(f"DEBUG: Inappropriate check result: {is_inappropriate}")
     if is_inappropriate:
         return inappropriate_response
+
+    # パターンマッチングで対応できるメッセージを先にチェック
+    message = user_message.lower()
+    
+    print("DEBUG: Starting pattern matching")
+    
+    # 各種パターンマッチング（変更なし）
+    if "おはよう" in message:
+        return random.choice(responses["morning_messages"])
+    # ... [他のパターンマッチング]
+
+    # ChatGPTを試す前にパターンマッチングで対応できない場合は
+    # デフォルトメッセージを返す
+    print("DEBUG: Using default response")
+    return random.choice(responses["default_messages"])
 
     # メッセージを小文字化して判定しやすくする
     message = user_message.lower()
