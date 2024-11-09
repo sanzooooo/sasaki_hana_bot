@@ -10,8 +10,8 @@ from dotenv import load_dotenv
 import random
 from openai import OpenAI
 import time
+from typing import Optional, Tuple
 from datetime import datetime
-from typing import Optional, Tuple  # Tupleを追加
 
 # 環境変数の読み込み
 load_dotenv()
@@ -55,7 +55,7 @@ class ImageHandler:
             image_path = random.choice(self.evening_images)
         return f"{self.base_url}/{image_path}"
 
-    def should_send_image(self, message: str) -> Tuple[bool, str]:  # ここを修正
+    def should_send_image(self, message: str) -> Tuple[bool, str]:
         """画像を送信すべきか判断"""
         # 朝の挨拶パターン
         if any(word in message for word in ["おはよう", "おはようございます", "グッドモーニング"]):
@@ -85,7 +85,31 @@ responses = {
         "こんばんは！今日も一日お疲れ様！わたしの歌、聴いてくれてありがとう✨",
         "こんばんは！おばあちゃんが作ってくれた水餃子、最高だったよ！いつも見てくれてありがとう😋"
     ],
-    # ... [他のresponsesは変更なし]
+    "default_messages": [
+        "わたし、カフェで新曲の練習中！応援してくれて嬉しいな😊",
+        "新潟の素敵なスポット巡りしてるの！いつかみんなに紹介したいな✨",
+        "ちょうどレッスン終わりで一息ついてるとこ！メッセージありがとう💕"
+    ],
+    "support_messages": [
+        "大丈夫だよ！わたしも一緒に頑張るからね！応援してるよ💪✨",
+        "つらい時は無理しなくていいの。わたしの歌を聴いてくれて嬉しいな😊",
+        "みんな頑張ってる！だからわたしも頑張れるの！いつもありがとう✨"
+    ],
+    "niigata_love_messages": [
+        "新潟って本当に素敵なところなの！日本海の夕日、美味しいお米、そして何より人の温かさがあるんだ！いつも応援ありがとう✨",
+        "わたし、古町でお買い物するの大好き！新潟の良さ、もっと伝えていきたいな😊",
+        "デンカビッグスワンでアルビの試合観戦！いつも見守ってくれてありがとう⚽️✨"
+    ],
+    "music_messages": [
+        f"新曲「セカイの歩き方」聴いてくれてありがとう！みんなへの想いを込めて歌ったの💕 配信中だよ→ {URLS['music_url']}",
+        "わたしの曲を聴いてくれてありがとう！全部想いを込めて歌ってるんだ✨",
+        "作詞は時々泣きそうになりながら書いてるの...応援してくれて嬉しいな😊"
+    ],
+    "tokyo_activity_messages": [
+        "東京では主にレッスンとお仕事なの！でも、新潟が恋しくなっちゃう！いつも応援ありがとう😊",
+        "東京は刺激的な毎日！でも、新潟の星空が恋しくなるな。メッセージ嬉しいよ✨",
+        "表参道のカフェでレッスンの合間に休憩中！応援してくれてありがとう💕"
+    ]
 }
 
 def get_chatgpt_response(user_message: str) -> Optional[str]:
@@ -95,7 +119,8 @@ def get_chatgpt_response(user_message: str) -> Optional[str]:
             timeout=10.0
         )
         
-        system_prompt = """[既存のシステムプロンプトをそのまま維持]"""
+        system_prompt = """あなたは「咲々木 花」として振る舞ってください。
+[前述のシステムプロンプトと同じ内容]"""
         
         response = client.chat.completions.create(
             model="gpt-4-1106-preview",
@@ -109,7 +134,21 @@ def get_chatgpt_response(user_message: str) -> Optional[str]:
             frequency_penalty=0.4
         )
         
-        return response.choices[0].message.content
+        full_response = response.choices[0].message.content
+        
+        if len(full_response) > 4000:
+            sentences = full_response.split('。')
+            truncated_response = ''
+            
+            for sentence in sentences:
+                if len(truncated_response + sentence + '。') < 4000:
+                    truncated_response += sentence + '。'
+                else:
+                    break
+            
+            return truncated_response + "\n（続きは少し短くお話しするね💕）"
+        
+        return full_response
 
     except Exception as e:
         print(f"ChatGPT error: {str(e)}")
@@ -120,11 +159,9 @@ def get_appropriate_response(user_message: str) -> str:
     message_counter += 1
 
     try:
-        # パターンマッチングによる応答を試みる
         response = None
         message = user_message.lower()
         
-        # 既存のパターンマッチング処理
         if "おはよう" in message:
             response = random.choice(responses["morning_messages"])
         elif "こんにちは" in message:
@@ -140,26 +177,24 @@ def get_appropriate_response(user_message: str) -> str:
         elif any(word in message for word in ["東京", "表参道", "原宿", "渋谷"]):
             response = random.choice(responses["tokyo_activity_messages"])
 
-        # パターンマッチングで応答がない場合はChatGPT
         if not response:
             response = get_chatgpt_response(user_message)
         
-        # ChatGPTの応答がない場合はデフォルト
         if not response:
             response = random.choice(responses["default_messages"])
         
-        # 応答の長さを確認と調整
         if len(response) > 4000:
             sentences = response.split('。')
             truncated_response = ''
+            
             for sentence in sentences:
                 if len(truncated_response + sentence + '。') < 4000:
                     truncated_response += sentence + '。'
                 else:
                     break
+            
             response = truncated_response + "\n（続きは少し短くお話しするね💕）"
-
-        # URL追加処理
+        
         if message_counter % 10 == 0:
             remaining_length = 4000 - len(response)
             if remaining_length > 100:
@@ -191,33 +226,31 @@ def callback():
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     try:
-        user_message = event.message.text
-        text_response = get_appropriate_response(user_message)
-        
-        # 画像送信の判断
-        image_handler = ImageHandler()
-        should_send, time_slot = image_handler.should_send_image(user_message)
-        
-        if should_send:
-            image_url = image_handler.get_random_image(time_slot)
-            messages = [
-                TextSendMessage(text=text_response),
-                ImageSendMessage(
-                    original_content_url=image_url,
-                    preview_image_url=image_url
-                )
-            ]
-        else:
-            messages = [TextSendMessage(text=text_response)]
-        
-        line_bot_api.reply_message(event.reply_token, messages)
-        
-    except Exception as e:
-        print(f"Error in handle_message: {str(e)}")
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text="ごめんね、うまく話せなかったの...😢")
-        )
+        user_profile = line_bot_api.get_profile(event.source.user_id)
+        user_name = user_profile.display_name
+    except:
+        user_name = "あなた"
+    
+    user_message = event.message.text
+    text_response = get_appropriate_response(user_message)
+    
+    # 画像送信の判断
+    image_handler = ImageHandler()
+    should_send, time_slot = image_handler.should_send_image(user_message)
+    
+    if should_send:
+        image_url = image_handler.get_random_image(time_slot)
+        messages = [
+            TextSendMessage(text=text_response),
+            ImageSendMessage(
+                original_content_url=image_url,
+                preview_image_url=image_url
+            )
+        ]
+    else:
+        messages = [TextSendMessage(text=text_response)]
+    
+    line_bot_api.reply_message(event.reply_token, messages)
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8080))
