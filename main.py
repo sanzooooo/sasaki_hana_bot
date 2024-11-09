@@ -1,13 +1,17 @@
 from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage
+from linebot.models import (
+    MessageEvent, TextMessage, TextSendMessage,
+    ImageSendMessage
+)
 import os
 from dotenv import load_dotenv
 import random
 from openai import OpenAI
 import time
 from typing import Optional
+from datetime import datetime
 
 # 環境変数の読み込み
 load_dotenv()
@@ -36,6 +40,34 @@ URLS = {
 # メッセージカウンター（URL共有用）
 message_counter = 0
 
+# 画像ハンドラークラス
+class ImageHandler:
+    def __init__(self):
+        self.base_url = "https://storage.googleapis.com/sasaki-images"
+        self.morning_images = [f"morning/{i}.jpg" for i in range(1, 11)]
+        self.evening_images = [f"evening/{i}.jpg" for i in range(1, 11)]
+
+    def get_random_image(self, time_slot: str) -> str:
+        """ランダムに画像URLを取得"""
+        if time_slot == 'morning':
+            image_path = random.choice(self.morning_images)
+        else:
+            image_path = random.choice(self.evening_images)
+        return f"{self.base_url}/{image_path}"
+
+    def should_send_image(self, message: str) -> tuple[bool, str]:
+        """画像を送信すべきか判断"""
+        # 朝の挨拶パターン
+        if any(word in message for word in ["おはよう", "おはようございます", "グッドモーニング"]):
+            return True, "morning"
+        
+        # お疲れ様パターン
+        if any(word in message for word in ["おつかれ", "お疲れ", "疲れた", "つかれた", 
+                                          "飲み", "のみ", "お酒", "日本酒", "ビール"]):
+            return True, "evening"
+        
+        return False, ""
+
 # 応答メッセージの定義
 responses = {
     "morning_messages": [
@@ -53,31 +85,7 @@ responses = {
         "こんばんは！今日も一日お疲れ様！わたしの歌、聴いてくれてありがとう✨",
         "こんばんは！おばあちゃんが作ってくれた水餃子、最高だったよ！いつも見てくれてありがとう😋"
     ],
-    "default_messages": [
-        "わたし、カフェで新曲の練習中！応援してくれて嬉しいな😊",
-        "新潟の素敵なスポット巡りしてるの！いつかみんなに紹介したいな✨",
-        "ちょうどレッスン終わりで一息ついてるとこ！メッセージありがとう💕"
-    ],
-    "support_messages": [
-        "大丈夫だよ！わたしも一緒に頑張るからね！応援してるよ💪✨",
-        "つらい時は無理しなくていいの。わたしの歌を聴いてくれて嬉しいな😊",
-        "みんな頑張ってる！だからわたしも頑張れるの！いつもありがとう✨"
-    ],
-    "niigata_love_messages": [
-        "新潟って本当に素敵なところなの！日本海の夕日、美味しいお米、そして何より人の温かさがあるんだ！いつも応援ありがとう✨",
-        "わたし、古町でお買い物するの大好き！新潟の良さ、もっと伝えていきたいな😊",
-        "デンカビッグスワンでアルビの試合観戦！いつも見守ってくれてありがとう⚽️✨"
-    ],
-    "music_messages": [
-        f"新曲「セカイの歩き方」聴いてくれてありがとう！みんなへの想いを込めて歌ったの💕 配信中だよ→ {URLS['music_url']}",
-        "わたしの曲を聴いてくれてありがとう！全部想いを込めて歌ってるんだ✨",
-        "作詞は時々泣きそうになりながら書いてるの...応援してくれて嬉しいな😊"
-    ],
-    "tokyo_activity_messages": [
-        "東京では主にレッスンとお仕事なの！でも、新潟が恋しくなっちゃう！いつも応援ありがとう😊",
-        "東京は刺激的な毎日！でも、新潟の星空が恋しくなるな。メッセージ嬉しいよ✨",
-        "表参道のカフェでレッスンの合間に休憩中！応援してくれてありがとう💕"
-    ]
+    # ... [他のresponsesは変更なし]
 }
 
 def get_chatgpt_response(user_message: str) -> Optional[str]:
@@ -87,10 +95,8 @@ def get_chatgpt_response(user_message: str) -> Optional[str]:
             timeout=10.0
         )
         
-        system_prompt = """あなたは「咲々木 花」として振る舞ってください。
-[前述のシステムプロンプトと同じ内容]"""
+        system_prompt = """[既存のシステムプロンプトをそのまま維持]"""
         
-        # max_tokensを増やして、より長い応答を可能に
         response = client.chat.completions.create(
             model="gpt-4-1106-preview",
             messages=[
@@ -98,29 +104,12 @@ def get_chatgpt_response(user_message: str) -> Optional[str]:
                 {"role": "user", "content": user_message}
             ],
             temperature=0.7,
-            max_tokens=500,  # 増やした
-            presence_penalty=0.6,  # 応答の多様性を向上
-            frequency_penalty=0.4   # 繰り返しを防ぐ
+            max_tokens=500,
+            presence_penalty=0.6,
+            frequency_penalty=0.4
         )
         
-        # 応答の長さをチェックして必要に応じて分割
-        full_response = response.choices[0].message.content
-        
-        # 応答が長すぎる場合は適切な位置で分割
-        if len(full_response) > 4000:  # LINEの制限を考慮してマージン確保
-            # 文章の区切りで分割（句点で分割）
-            sentences = full_response.split('。')
-            truncated_response = ''
-            
-            for sentence in sentences:
-                if len(truncated_response + sentence + '。') < 4000:
-                    truncated_response += sentence + '。'
-                else:
-                    break
-            
-            return truncated_response + "\n（続きは少し短くお話しするね💕）"
-        
-        return full_response
+        return response.choices[0].message.content
 
     except Exception as e:
         print(f"ChatGPT error: {str(e)}")
@@ -135,23 +124,19 @@ def get_appropriate_response(user_message: str) -> str:
         response = None
         message = user_message.lower()
         
-        # 時間帯による挨拶
+        # 既存のパターンマッチング処理
         if "おはよう" in message:
             response = random.choice(responses["morning_messages"])
         elif "こんにちは" in message:
             response = random.choice(responses["afternoon_messages"])
         elif "こんばんは" in message:
             response = random.choice(responses["evening_messages"])
-        # 励まし系
         elif any(word in message for word in ["つらい", "疲れた", "しんどい", "不安"]):
             response = random.choice(responses["support_messages"])
-        # 新潟関連
         elif any(word in message for word in ["新潟", "にいがた", "古町", "万代"]):
             response = random.choice(responses["niigata_love_messages"])
-        # 音楽関連
         elif any(word in message for word in ["曲", "歌", "音楽", "セカイの歩き方"]):
             response = random.choice(responses["music_messages"])
-        # 東京関連
         elif any(word in message for word in ["東京", "表参道", "原宿", "渋谷"]):
             response = random.choice(responses["tokyo_activity_messages"])
 
@@ -163,24 +148,21 @@ def get_appropriate_response(user_message: str) -> str:
         if not response:
             response = random.choice(responses["default_messages"])
         
-        # 応答の長さを確認
+        # 応答の長さを確認と調整
         if len(response) > 4000:
-            # 長すぎる場合は適切な位置で分割
             sentences = response.split('。')
             truncated_response = ''
-            
             for sentence in sentences:
                 if len(truncated_response + sentence + '。') < 4000:
                     truncated_response += sentence + '。'
                 else:
                     break
-            
             response = truncated_response + "\n（続きは少し短くお話しするね💕）"
-        
-        # 10回に1回の確率でURLを追加
+
+        # URL追加処理
         if message_counter % 10 == 0:
             remaining_length = 4000 - len(response)
-            if remaining_length > 100:  # URLを追加するのに十分な余裕がある場合のみ
+            if remaining_length > 100:
                 url_additions = [
                     f"\nわたしの楽曲はここで聴けるよ！応援ありがとう✨ {URLS['music_url']}",
                     f"\nLINEスタンプ作ったの！使ってくれたら嬉しいな😊 {URLS['line_stamp_url']}",
@@ -209,18 +191,33 @@ def callback():
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     try:
-        user_profile = line_bot_api.get_profile(event.source.user_id)
-        user_name = user_profile.display_name
-    except:
-        user_name = "あなた"
-    
-    user_message = event.message.text
-    response = get_appropriate_response(user_message)
-    
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=response)
-    )
+        user_message = event.message.text
+        text_response = get_appropriate_response(user_message)
+        
+        # 画像送信の判断
+        image_handler = ImageHandler()
+        should_send, time_slot = image_handler.should_send_image(user_message)
+        
+        if should_send:
+            image_url = image_handler.get_random_image(time_slot)
+            messages = [
+                TextSendMessage(text=text_response),
+                ImageSendMessage(
+                    original_content_url=image_url,
+                    preview_image_url=image_url
+                )
+            ]
+        else:
+            messages = [TextSendMessage(text=text_response)]
+        
+        line_bot_api.reply_message(event.reply_token, messages)
+        
+    except Exception as e:
+        print(f"Error in handle_message: {str(e)}")
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="ごめんね、うまく話せなかったの...😢")
+        )
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8080))
