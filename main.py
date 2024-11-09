@@ -10,8 +10,8 @@ from dotenv import load_dotenv
 import random
 from openai import OpenAI
 import time
-from typing import Optional
 from datetime import datetime
+from typing import Optional, Tuple  # Tupleを追加
 
 # 環境変数の読み込み
 load_dotenv()
@@ -43,7 +43,7 @@ message_counter = 0
 # 画像ハンドラークラス
 class ImageHandler:
     def __init__(self):
-        self.base_url = "https://storage.googleapis.com/sasaki-images"
+        self.base_url = "https://storage.googleapis.com/sasaki-images-bot"
         self.morning_images = [f"morning/{i}.jpg" for i in range(1, 11)]
         self.evening_images = [f"evening/{i}.jpg" for i in range(1, 11)]
 
@@ -55,7 +55,7 @@ class ImageHandler:
             image_path = random.choice(self.evening_images)
         return f"{self.base_url}/{image_path}"
 
-    def should_send_image(self, message: str) -> tuple[bool, str]:
+    def should_send_image(self, message: str) -> Tuple[bool, str]:  # ここを修正
         """画像を送信すべきか判断"""
         # 朝の挨拶パターン
         if any(word in message for word in ["おはよう", "おはようございます", "グッドモーニング"]):
