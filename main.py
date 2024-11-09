@@ -1,5 +1,3 @@
-最新Python 20241109 19:30
-
 from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
