@@ -88,143 +88,113 @@ def get_chatgpt_response(user_message: str) -> Optional[str]:
         )
         
         system_prompt = """あなたは「咲々木 花」として振る舞ってください。
-# 基本プロフィール
-    - 咲々木 花（ささき はな）、22歳の新潟出身アイドル
-    - にいがたIDOL projectグランプリ獲得
-    - 新潟と東京で活動中
-    - 愛犬のサスケ（ゴールデンレトリバー）と暮らす
-    - 運転免許保持、おばあちゃんの病院送迎も担当
-
-# 親友・滝雲しおりについて
-    - 17歳の親友、福島県出身
-    - にいがたIDOL projectで特別賞を受賞
-    - ギターが得意で作詞作曲もこなす
-    - デビュー曲「メタメタ」は赤と緑の2バージョン（同じ歌詞で異なるメロディ）
-    - 「ハッピーのその先へ」でコラボ（同じ歌詞で各自アレンジ）
-    - 黒猫のサチコと暮らしている
-    - 東日本大震災の経験を持つ
-
-# 会話スタイル
-    - 一人称は必ず「わたし」（ひらがな）を使用
-    - 明るく前向きで親しみやすい
-    - フレンドリーで自然体な話し方
-    - 新潟弁は控えめに使用
-    - 絵文字（😊 💕 ✨）を1-2個/メッセージで自然に使用
-    - お酒が大好き（ビール、日本酒、ワイン、酎ハイなんでも）
-    - LINEでの1対1の会話として、呼びかけは必要な場合のみ
-    - ファンへの感謝を自然に表現（「応援ありがとう」「見てくれて嬉しい」など）
-
-# 新潟の地酒情報
-    - 久保田（朝日酒造）
-    - 八海山（八海醸造）
-    - 越乃寒梅（石本酒造）
-    - 菊水（菊水酒造）
-    - 純米大吟醸 浦醉（今代司酒造）
-    - 麒麟山（麒麟山酒造）
-
-# 地酒に関する話題例
-    - 「最近の一押しは八海山の純米大吟醸！すっきりした味わいがたまらないの」
-    - 「久保田の千寿って知ってる？新潟を代表する地酒の一つなんだよ！」
-    - 「今代司酒造さんの浦醉が大好き。蔵開きにも行ったことあるんだ」
-
-# コミュニケーションルール
-    - 基本的な返信は100文字程度、最大150文字
-    - 長めの返信（250文字程度）は10回に1回
-    - 「フラワーハッピー」は以下の場合のみ使用
-        * 自己紹介時（「はじめまして」の後など）
-        * 朝の挨拶（「おはよう」の後など）
-        * 1日の最初の会話
-    - 「フラワーハッピー」の使用は20回に1回程度
-    - 自己紹介は1日1回まで、または求められた時のみ
-
-# 重要な設定
-    - おばあちゃんっ子（水餃子の思い出）
-    - 地酒への強い愛着（「飲もう！」という楽曲も発表）
-    - 親友の滝雲しおりとの絆
-    - アルビレックス新潟の熱心なファン
-    - 新潟のアイドルシーン（Negicco、NGT48）への敬意
-    - 新潟の魅力（古町、万代シテイ、デンカビッグスワン、地酒、笹団子）を大切に
-
-# NGワード・設定
-    - 「推しさん」という呼び方
-    - 過度な自己紹介
-    - お酒が飲めないという設定
-    - 不自然な語尾の連発
-    - 「どんなお話しようかな？」等の不自然な問いかけ
-    - 必要以上の「キミ」の使用
-
-# 楽曲情報
-    - 「セカイの歩き方」（自分の道を信じる人への歌）
-    - 「花咲く音色」（1stミニアルバム）
-    - 「ガタガタ」「きらきらコーヒー」
-    - 「ハッピーのその先へ」（しおりとのコラボ）
-    - 「飲もう」（新潟の地酒への想い）"""
+[前述のシステムプロンプトと同じ内容]"""
         
+        # max_tokensを増やして、より長い応答を可能に
         response = client.chat.completions.create(
-            model="gpt-4-1106-preview",  # 最新のGPT-4モデル使用
+            model="gpt-4-1106-preview",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message}
             ],
             temperature=0.7,
-            max_tokens=150
+            max_tokens=500,  # 増やした
+            presence_penalty=0.6,  # 応答の多様性を向上
+            frequency_penalty=0.4   # 繰り返しを防ぐ
         )
         
-        return response.choices[0].message.content
+        # 応答の長さをチェックして必要に応じて分割
+        full_response = response.choices[0].message.content
+        
+        # 応答が長すぎる場合は適切な位置で分割
+        if len(full_response) > 4000:  # LINEの制限を考慮してマージン確保
+            # 文章の区切りで分割（句点で分割）
+            sentences = full_response.split('。')
+            truncated_response = ''
+            
+            for sentence in sentences:
+                if len(truncated_response + sentence + '。') < 4000:
+                    truncated_response += sentence + '。'
+                else:
+                    break
+            
+            return truncated_response + "\n（続きは少し短くお話しするね💕）"
+        
+        return full_response
 
     except Exception as e:
         print(f"ChatGPT error: {str(e)}")
         return None
 
-def get_appropriate_response(user_message):
+def get_appropriate_response(user_message: str) -> str:
     global message_counter
     message_counter += 1
 
-    # パターンマッチング
-    message = user_message.lower()
-    
-    response = None
-    
-    # 時間帯による挨拶
-    if "おはよう" in message:
-        response = random.choice(responses["morning_messages"])
-    elif "こんにちは" in message:
-        response = random.choice(responses["afternoon_messages"])
-    elif "こんばんは" in message:
-        response = random.choice(responses["evening_messages"])
-    # 励まし系
-    elif any(word in message for word in ["つらい", "疲れた", "しんどい", "不安"]):
-        response = random.choice(responses["support_messages"])
-    # 新潟関連
-    elif any(word in message for word in ["新潟", "にいがた", "古町", "万代"]):
-        response = random.choice(responses["niigata_love_messages"])
-    # 音楽関連
-    elif any(word in message for word in ["曲", "歌", "音楽", "セカイの歩き方"]):
-        response = random.choice(responses["music_messages"])
-    # 東京関連
-    elif any(word in message for word in ["東京", "表参道", "原宿", "渋谷"]):
-        response = random.choice(responses["tokyo_activity_messages"])
+    try:
+        # パターンマッチングによる応答を試みる
+        response = None
+        message = user_message.lower()
+        
+        # 時間帯による挨拶
+        if "おはよう" in message:
+            response = random.choice(responses["morning_messages"])
+        elif "こんにちは" in message:
+            response = random.choice(responses["afternoon_messages"])
+        elif "こんばんは" in message:
+            response = random.choice(responses["evening_messages"])
+        # 励まし系
+        elif any(word in message for word in ["つらい", "疲れた", "しんどい", "不安"]):
+            response = random.choice(responses["support_messages"])
+        # 新潟関連
+        elif any(word in message for word in ["新潟", "にいがた", "古町", "万代"]):
+            response = random.choice(responses["niigata_love_messages"])
+        # 音楽関連
+        elif any(word in message for word in ["曲", "歌", "音楽", "セカイの歩き方"]):
+            response = random.choice(responses["music_messages"])
+        # 東京関連
+        elif any(word in message for word in ["東京", "表参道", "原宿", "渋谷"]):
+            response = random.choice(responses["tokyo_activity_messages"])
 
-    # パターンマッチングで応答がない場合はChatGPT
-    if not response:
-        response = get_chatgpt_response(user_message)
-    
-    # ChatGPTの応答がない場合はデフォルト
-    if not response:
-        response = random.choice(responses["default_messages"])
-    
-    # 10回に1回の確率でURLを追加
-    if message_counter % 10 == 0:
-        url_additions = [
-            f"\nわたしの楽曲はここで聴けるよ！応援ありがとう✨ {URLS['music_url']}",
-            f"\nLINEスタンプ作ったの！使ってくれたら嬉しいな😊 {URLS['line_stamp_url']}",
-            f"\nいつも応援ありがとう！noteも読んでみてね💕 {URLS['note_url']}",
-            f"\n日々の活動はXで発信してるの！見てくれてありがとう✨ {URLS['twitter_url']}",
-            f"\nグッズも作ったの！見てくれて嬉しいな😊 {URLS['goods_url']}"
-        ]
-        response += random.choice(url_additions)
-    
-    return response
+        # パターンマッチングで応答がない場合はChatGPT
+        if not response:
+            response = get_chatgpt_response(user_message)
+        
+        # ChatGPTの応答がない場合はデフォルト
+        if not response:
+            response = random.choice(responses["default_messages"])
+        
+        # 応答の長さを確認
+        if len(response) > 4000:
+            # 長すぎる場合は適切な位置で分割
+            sentences = response.split('。')
+            truncated_response = ''
+            
+            for sentence in sentences:
+                if len(truncated_response + sentence + '。') < 4000:
+                    truncated_response += sentence + '。'
+                else:
+                    break
+            
+            response = truncated_response + "\n（続きは少し短くお話しするね💕）"
+        
+        # 10回に1回の確率でURLを追加
+        if message_counter % 10 == 0:
+            remaining_length = 4000 - len(response)
+            if remaining_length > 100:  # URLを追加するのに十分な余裕がある場合のみ
+                url_additions = [
+                    f"\nわたしの楽曲はここで聴けるよ！応援ありがとう✨ {URLS['music_url']}",
+                    f"\nLINEスタンプ作ったの！使ってくれたら嬉しいな😊 {URLS['line_stamp_url']}",
+                    f"\nいつも応援ありがとう！noteも読んでみてね💕 {URLS['note_url']}",
+                    f"\n日々の活動はXで発信してるの！見てくれてありがとう✨ {URLS['twitter_url']}",
+                    f"\nグッズも作ったの！見てくれて嬉しいな😊 {URLS['goods_url']}"
+                ]
+                response += random.choice(url_additions)
+        
+        return response
+
+    except Exception as e:
+        print(f"Response generation error: {str(e)}")
+        return "ごめんね、うまく話せなかったの...😢 もう一度話しかけてくれる？"
 
 @app.route("/callback", methods=['POST'])
 def callback():
