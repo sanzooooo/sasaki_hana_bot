@@ -330,32 +330,32 @@ class SakuragiPersonality:
 sakuragi = SakuragiPersonality()
 
 @app.route("/callback", methods=['POST'])
-def callback():
-    signature = request.headers['X-Line-Signature']
-    body = request.get_data(as_text=True)
-    try:
-        handler.handle(body, signature)
-    except InvalidSignatureError:
-        abort(400)
-    return 'OK'
+    def callback():
+        signature = request.headers['X-Line-Signature']
+        body = request.get_data(as_text=True)
+        try:
+            handler.handle(body, signature)
+        except InvalidSignatureError:
+            abort(400)
+        return 'OK'
 
 @handler.add(MessageEvent, message=TextMessage)
-def handle_message(event):
-    try:
-        user_id = event.source.user_id
-        user_message = event.message.text
+    def handle_message(event):
+        try:
+            user_id = event.source.user_id
+            user_message = event.message.text
         
         # 応答の生成
-        response = sakuragi.get_appropriate_response(user_id, user_message)
+            response = sakuragi.get_appropriate_response(user_id, user_message)
         
         # フラワーハッピーの追加判定
-        if sakuragi.should_use_flower_happy(user_id, user_message):
-            response = f"{response}\nフラワーハッピー✨🌸"
+            if sakuragi.should_use_flower_happy(user_id, user_message):
+                response = f"{response}\nフラワーハッピー✨🌸"
         
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=response)
-        )
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text=response)
+            )
 
     except Exception as e:
         error_response = sakuragi.handle_error(e)
