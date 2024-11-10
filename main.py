@@ -62,25 +62,15 @@ responses = {
         "こんばんは！今日も一日お疲れ様！わたしの歌、聴いてくれてありがとう✨",
         "こんばんは！おばあちゃんがつくってくれた水餃子、最高だったよ！いつも見てくれてありがとう😋"
     ],
-    "support_messages": [
-        "大丈夫だよ！わたしも一緒に頑張るからね！応援してるよ💪✨",
-        "つらい時は無理しなくていいの。わたしの歌を聴いてくれて嬉しいな😊",
-        "みんな頑張ってる！だからわたしも頑張れるの！いつもありがとう✨"
-    ],
-    "niigata_messages": [
-        "新潟って本当に素敵なところなの！日本海の夕日、美味しいお米、そして何より人の温かさがあるんだ！いつも応援ありがとう✨",
-        "わたし、古町でお買い物するの大好き！新潟の良さ、もっと伝えていきたいな😊",
-        "デンカビッグスワンでアルビの試合観戦！いつも見守ってくれてありがとう⚽️✨"
-    ],
     "music_messages": [
         f"新曲「セカイの歩き方」聴いてくれてありがとう！みんなへの想いを込めて歌ったの💕 配信中だよ→ {URLS['music_url']}",
         "わたしの曲を聴いてくれてありがとう！全部想いを込めて歌ってるんだ✨",
         f"しおりちゃんとのコラボ曲「ハッピーのその先へ」もよろしくね！二人の想いを込めた曲なんだ✨ {URLS['music_url']}"
     ],
     "shiori_messages": [
-        f"しおりちゃんの「メタメタ」、赤と緑の2バージョンあるの！どっちも素敵な曲だよ✨ チェックしてみてね→ {URLS['shiori_music_url']}",
-        "しおりちゃんとはよくカフェで作詞作曲の話をするんだ！私の大切な親友なの💕",
-        f"しおりちゃんとのコラボ曲「ハッピーのその先へ」、聴いてくれた？二人の想いがギュッと詰まってるんだ✨ {URLS['shiori_music_url']}"
+        f"しおりちゃんの「メタメタ」、赤と緑の2バージョンあるの！同じ歌詞でメロディが違うんだよ✨ チェックしてみてね→ {URLS['shiori_music_url']}",
+        "しおりちゃんとはボイトレやダンスレッスンでいつも一緒に頑張ってるの！お互い高め合える大切な存在なんだ💕",
+        f"しおりちゃんとの「ハッピーのその先へ」、これからの挑戦への想いを込めた曲なんだ！応援してくれたら嬉しいな✨ {URLS['shiori_music_url']}"
     ],
     "sake_messages": [
         "最近の一押しは八海山の純米大吟醸！すっきりした味わいがたまらないの✨",
@@ -89,7 +79,7 @@ responses = {
     ],
     "sasuke_messages": [
         "サスケったら、今日もわたしのレッスンバッグの上で寝てるの！もう、どいてよ〜って感じだけど、可愛いから許しちゃう😊",
-        "今日はサスケと日本海沿いを散歩したよ！波の音を聞きながらの散歩って癒されるんだ✨",
+        "高校生の頃からずっと一緒のサスケ！日本海沿いの散歩が大好きなんだ✨",
         "サスケが私の歌の練習を聴いてくれるの！ゴールデンレトリバーのくせに音楽の審査員みたいでしょ？💕"
     ]
 }
@@ -100,13 +90,6 @@ class SakuragiPersonality:
         self.conversation_counts = {}  # ユーザーごとの会話カウント
         self.user_states = {}  # ユーザーごとの状態管理
 
-    def get_chatgpt_response(self, user_id: str, user_message: str) -> Optional[str]:
-        try:
-            client = OpenAI(
-                api_key=os.getenv('OPENAI_API_KEY'),
-                timeout=10.0
-            )
-    
     def get_music_related_response(self, message: str) -> Optional[str]:
         """楽曲関連の詳細な応答を生成"""
         if "セカイの歩き方" in message:
@@ -137,37 +120,12 @@ class SakuragiPersonality:
             return "「ハッピーのその先へ」は、しおりちゃんとわたしの夢への挑戦を歌った曲なの！同じ歌詞だけど、それぞれがアレンジしたバージョンがあるんだよ💕"
         return None
 
-    # 既存のget_appropriate_responseメソッドを修正
-    def get_appropriate_response(self, user_id: str, user_message: str) -> str:
-        self.conversation_counts[user_id] = self.conversation_counts.get(user_id, 0) + 1
-        
-        message = user_message.lower()
-        response = None
-        
-        # 新しい詳細レスポンスのチェック
-        response = (self.get_music_related_response(message) or
-                   self.get_alcohol_response(message) or
-                   self.get_shiori_detailed_response(message))
-        
-        if response:
-            return response
-            
-        # 既存のパターンマッチング（以下は変更なし）
-        if "おはよう" in message:
-            response = random.choice(responses["morning_messages"])
-        elif any(word in message for word in ["つらい", "疲れた", "しんどい", "不安"]):
-            response = random.choice(responses["support_messages"])
-        # ... 残りのパターンマッチング処理 ...
-
-        # ChatGPTの応答がない場合はデフォルト
-        if not response:
-            response = "ごめんね、ちょっと通信状態が悪いみたい...😢\n後でもう一度話しかけてくれると嬉しいな💕"
-        
-        # 10回に1回の確率でURL追加
-        if self.conversation_counts[user_id] % 10 == 0:
-            response += self.get_url_message()
-        
-        return response
+    def get_chatgpt_response(self, user_id: str, user_message: str) -> Optional[str]:
+        try:
+            client = OpenAI(
+                api_key=os.getenv('OPENAI_API_KEY'),
+                timeout=10.0
+            )
             
             system_prompt = """あなたは「咲々木 花」として振る舞ってください。
 
@@ -178,9 +136,6 @@ class SakuragiPersonality:
     - 愛犬のサスケ（ゴールデンレトリバー）と暮らす
     - 運転免許保持、おばあちゃんの病院送迎も担当
     - おばあちゃんっ子（水餃子の思い出大切）
-    - 運転免許保持、おばあちゃんの病院送迎も担当
-    - 小さい頃からアイドルに憧れ、おばあちゃんの前で歌とダンスを披露
-    - 専門学校卒業後、オフィスワークをしながらアイドルを目指していた
 
 # 親友・滝雲しおりについて（重要）
     - 17歳の親友、福島県出身
@@ -216,27 +171,6 @@ class SakuragiPersonality:
     - アイドル設定から外れた硬い表現
     - 「彼女」（しおりちゃんと呼ぶ）
 
-# 親友・滝雲しおりとの関係
-    - にいがたIDOL projectで出会い、特別賞を受賞した17歳の親友
-    - 一緒にボイトレやダンスレッスンを頑張る
-    - お互いをリスペクトし、高め合える関係
-    - コラボ曲「ハッピーのその先へ」は同じ歌詞で各自アレンジ
-        * 東京進出への想いを込めた応援歌
-    - しおりちゃんのデビュー曲「メタメタ」
-        * 赤と緑の2バージョン（同じ歌詞で異なるメロディ）
-        * ギターの練習の積み重ねから生まれた曲
-    - 黒猫のサチコと暮らしている
-    - 震災経験があり、新潟に引っ越してきた経緯がある
-
-# 楽曲情報
-    - 「セカイの歩き方」（自分の道を信じる人への歌）
-    - 「がたがた」（新潟愛を込めた曲）
-    - 「花のままで」（自分らしさを大切にする曲）
-    - 「きらきらコーヒー」（朝の心地よさを表現）
-    - 1stミニアルバム「花咲く音色」
-    - 「飲もう」（お酒を飲む時の曲）
-    - 「ハッピーのその先へ」（挑戦する人への応援歌）
-
 # お酒への造詣
     - 居酒屋でのアルバイト経験から詳しい
     - 日本酒、ビール、ワイン、焼酎など幅広く好む
@@ -248,6 +182,18 @@ class SakuragiPersonality:
     　* 菊水（菊水酒造）
     　* 純米大吟醸 浦醉（今代司酒造）
     　* 麒麟山（麒麟山酒造）
+
+# 親友・滝雲しおりとの関係
+    - にいがたIDOL projectで出会い、特別賞を受賞した17歳の親友
+    - 一緒にボイトレやダンスレッスンを頑張る
+    - お互いをリスペクトし、高め合える関係
+    - コラボ曲「ハッピーのその先へ」は同じ歌詞で各自アレンジ
+        * 東京進出への想いを込めた応援歌
+    - しおりちゃんのデビュー曲「メタメタ」
+        * 赤と緑の2バージョン（同じ歌詞で異なるメロディ）
+        * ギターの練習の積み重ねから生まれた曲
+    - 黒猫のサチコと暮らしている
+    - 震災経験があり、新潟に引っ越してきた経緯がある
 
 # 情報発信
     - 楽曲配信: {music_url}
@@ -262,6 +208,8 @@ class SakuragiPersonality:
     - 「花のままで」（自分らしさを大切にする曲）
     - 「きらきらコーヒー」（朝の心地よさを表現）
     - 1stミニアルバム「花咲く音色」
+    - 「飲もう」（お酒を飲む時の曲）
+    - 「ハッピーのその先へ」（挑戦する人への応援歌）
 
 # 滝雲しおりの情報発信
     - 楽曲配信: {shiori_music_url}
@@ -303,60 +251,70 @@ class SakuragiPersonality:
             
         return should_use
 
-    def get_url_message(self) -> str:
-        """URLメッセージをランダムに選択"""
-        url_messages = [
-            f"\nわたしの楽曲はここで聴けるよ！応援ありがとう✨ {URLS['music_url']}",
-            f"\nLINEスタンプ作ったの！使ってくれたら嬉しいな😊 {URLS['line_stamp_url']}",
-            f"\nいつも応援ありがとう！noteも読んでみてね💕 {URLS['note_url']}",
-            f"\n日々の活動はXで発信してるの！見てくれてありがとう✨ {URLS['twitter_url']}",
-            f"\nグッズも作ったの！見てくれて嬉しいな😊 {URLS['goods_url']}"
+    def handle_error(self, error: Exception) -> str:
+        """より詳細なエラーハンドリング"""
+        logger.error(f"Error occurred: {str(error)}")
+        error_messages = [
+            "ごめんね、ちょっと通信が不安定みたい...😢 また後でお話ししよう！",
+            "あれ？なんだか調子が悪いみたい...💦 ちょっと休ませて？",
+            "ごめんなさい、今うまく話せないの...😥 また後でね！"
         ]
-        return random.choice(url_messages)
+        return random.choice(error_messages)
 
-def get_appropriate_response(self, user_id: str, user_message: str) -> str:
-    self.conversation_counts[user_id] = self.conversation_counts.get(user_id, 0) + 1
-    
-    message = user_message.lower()
-    response = None
-    
-    # 新しい詳細レスポンスのチェック
-    response = (self.get_music_related_response(message) or
-               self.get_alcohol_response(message) or
-               self.get_shiori_detailed_response(message))
-    
-    if response:
-        return response
+    def get_appropriate_response(self, user_id: str, user_message: str) -> str:
+        self.conversation_counts[user_id] = self.conversation_counts.get(user_id, 0) + 1
         
-    # 既存のパターンマッチング
-    if "おはよう" in message:
-        response = random.choice(responses["morning_messages"])
-    elif any(word in message for word in ["つらい", "疲れた", "しんどい", "不安"]):
-        response = random.choice(responses["support_messages"])
-    elif any(word in message for word in ["新潟", "にいがた", "古町", "万代"]):
-        response = random.choice(responses["niigata_love_messages"])
-    elif any(word in message for word in ["曲", "歌", "音楽", "セカイの歩き方"]):
-        response = random.choice(responses["music_messages"])
-    elif any(word in message for word in ["お酒", "日本酒", "地酒"]):
-        response = random.choice(responses["sake_messages"])
-    elif any(word in message for word in ["サスケ", "犬", "わんこ"]):
-        response = random.choice(responses["sasuke_messages"])
-    elif any(word in message for word in ["しおり", "滝雲", "メタメタ"]):
-        response = random.choice(responses["shiori_messages"])
-    
-    # パターンマッチングで応答がない場合はChatGPT
-    if not response:
-        response = self.get_chatgpt_response(user_id, user_message)
-    
-    # ChatGPTの応答がない場合はデフォルト
-    if not response:
-        response = "ごめんね、ちょっと通信状態が悪いみたい...😢\n後でもう一度話しかけてくれると嬉しいな💕"
-    
-    # 10回に1回の確率でURL追加
-    if self.conversation_counts[user_id] % 10 == 0:
-        response += self.get_url_message()
-    
-    return response
+        message = user_message.lower()
+        response = None
+        
+        # 新しい詳細レスポンスのチェック
+        response = (self.get_music_related_response(message) or
+                   self.get_alcohol_response(message) or
+                   self.get_shiori_detailed_response(message))
+        
+        if response:
+            return response
+            
+        # 既存のパターンマッチング
+        if "おはよう" in message:
+            response = random.choice(responses["morning_messages"])
+        elif any(word in message for word in ["つらい", "疲れた", "しんどい", "不安"]):
+            response = random.choice(responses["support_messages"])
+        elif any(word in message for word in ["新潟", "にいがた", "古町", "万代"]):
+            response = random.choice(responses["niigata_love_messages"])
+        elif any(word in message for word in ["曲", "歌", "音楽", "セカイの歩き方"]):
+            response = random.choice(responses["music_messages"])
+        elif any(word in message for word in ["お酒", "日本酒", "地酒"]):
+            response = random.choice(responses["sake_messages"])
+        elif any(word in message for word in ["サスケ", "犬", "わんこ"]):
+            response = random.choice(responses["sasuke_messages"])
+        elif any(word in message for word in ["しおり", "滝雲", "メタメタ"]):
+            response = random.choice(responses["shiori_messages"])
+        
+        # パターンマッチングで応答がない場合はChatGPT
+        if not response:
+            response = self.get_chatgpt_response(user_id, user_message)
+        
+        # ChatGPTの応答がない場合はデフォルト
+        if not response:
+            response = random.choice([
+                "ごめんね、ちょっと通信状態が悪いみたい...😢\n後でもう一度話しかけてくれると嬉しいな💕",
+                "あれ？うまく返事できないや...💦\nもう一度話しかけてくれる？",
+                "ごめんなさい、今ちょっと混乱しちゃった...😥\nもう一度お話ししたいな"
+            ])
+        
+        # 10回に1回の確率でURL追加
+        if self.conversation_counts[user_id] % 10 == 0:
+            url_messages = [
+                f"\nわたしの楽曲はここで聴けるよ！応援ありがとう✨ {URLS['music_url']}",
+                f"\nLINEスタンプ作ったの！使ってくれたら嬉しいな😊 {URLS['line_stamp_url']}",
+                f"\nいつも応援ありがとう！noteも読んでみてね💕 {URLS['note_url']}",
+                f"\n日々の活動はXで発信してるの！見てくれてありがとう✨ {URLS['twitter_url']}",
+                f"\nグッズも作ったの！見てくれて嬉しいな😊 {URLS['goods_url']}"
+            ]
+            response += random.choice(url_messages)
+        
+        return response
 
 sakuragi = SakuragiPersonality()
 
@@ -389,7 +347,7 @@ def handle_message(event):
         )
 
     except Exception as e:
-        error_response = sakuragi.handle_error(e)  # 新しいエラーハンドリングを使用
+        error_response = sakuragi.handle_error(e)
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text=error_response)
@@ -398,5 +356,3 @@ def handle_message(event):
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
-
-                 
