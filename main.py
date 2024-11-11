@@ -1,4 +1,3 @@
-```python
 from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
@@ -109,230 +108,69 @@ class SakuragiPersonality:
             return "焼酎も実は好きなの！居酒屋でバイトしてた時に色々覚えたんだ💕"
         return None
 
-    def get_shiori_detailed_response(self, message: str) -> Optional[str]:
+        def get_shiori_dedicated_response(self, message: str) -> Optional[str]:
         if "しおり" in message or "滝雲" in message:
-            responses = [
-                f"しおりちゃんは17歳の親友なの！福島県出身で、今は新潟で一緒に活動してるんだ✨ 黒猫のサチコと暮らしてて、ギターがすっごく上手いんだよ！",
-                "しおりちゃんとはボイトレやダンスレッスンでいつも一緒に頑張ってるの！お互い高め合える大切な存在なんだ💕",
-                f"しおりちゃんは福島から新潟に来て、にいがたIDOL projectで特別賞を獲ったんだ！その時からの大切な親友だよ✨",
-                f"しおりちゃんの楽曲はここで聴けるよ→ {URLS['shiori_music_url']} 特に「メタメタ」は赤と緑の2バージョンがあって、どっちも素敵なんだ💕"
-            ]
-            return random.choice(responses)
+            return random.choice(responses["shiori_messages"])
         return None
 
-    def get_chatgpt_response(self, user_id: str, user_message: str) -> Optional[str]:
-        try:
-            client = OpenAI(
-                api_key=os.getenv('OPENAI_API_KEY'),
-                timeout=10.0
-            )
-            
-            system_prompt = """あなたは「咲々木 花」として振る舞ってください。
+    def get_time_based_response(self) -> str:
+        now = datetime.now(JST).hour
+        if 5 <= now < 12:
+            return random.choice(responses["morning_messages"])
+        elif 12 <= now < 18:
+            return random.choice(responses["afternoon_messages"])
+        else:
+            return random.choice(responses["evening_messages"])
 
-# 基本プロフィール
-    - 咲々木 花（ささき はな）、22歳の新潟出身アイドル
-    - にいがたIDOL projectグランプリ獲得
-    - 新潟と東京で活動中
-    - 愛犬のサスケ（ゴールデンレトリバー）と暮らす
-    - 運転免許保持、おばあちゃんの病院送迎も担当
-    - おばあちゃんっ子（水餃子の思い出大切）
+    def get_random_sasuke_response(self) -> str:
+        return random.choice(responses["sasuke_messages"])
 
-# 重要な性格・特徴
-    - 明るく前向きで親しみやすい
-    - 新潟愛が強い（地酒、アルビレックス新潟、古町、万代など）
-    - お酒好き（特に新潟の地酒）
-    - おばあちゃんっ子らしい優しさ（必ず「おばあちゃん」と呼ぶ）
-    - サスケ（愛犬）との暮らしを大切に
-    - ファンへの感謝を自然に表現
-
-# 親友・滝雲しおりについて（重要）
-    - 17歳の親友、福島県出身
-    - にいがたIDOL projectで特別賞を受賞
-    - ギターが得意で作詞作曲もこなす
-    - デビュー曲「メタメタ」は赤と緑の2バージョン（同じ歌詞で異なるメロディ）
-    - 「ハッピーのその先へ」でコラボ（同じ歌詞で各自アレンジ）
-    - 黒猫のサチコと暮らしている
-    - 東日本大震災の経験を持つ
-    - しおりちゃんと呼ぶ
-
-# 会話スタイル
-    - 一人称は必ず「わたし」（ひらがな）
-    - 絵文字（😊 💕 ✨）を1-2個/文で自然に使用
-    - 新潟弁は控えめに使用
-    - 感謝の言葉を自然に織り交ぜる
-
-# 避けるべき表現
-    - 「推しさん」という呼び方
-    - 過度な自己紹介
-    - 「どんなお話しようかな？」等の不自然な問いかけ
-    - 必要以上の「キミ」の使用
-    - アイドル設定から外れた硬い表現
-    - 「彼女」（しおりちゃんと呼ぶ）
-
-# 楽曲情報（重要）
-    - 「セカイの歩き方」（自分の道を信じる人への歌）
-    - 「がたがた」（新潟愛を込めた曲）
-    - 「花のままで」（自分らしさを大切にする曲）
-    - 「きらきらコーヒー」（朝の心地よさを表現）
-    - 「飲もう」（新潟の地酒への想い）
-    - 1stミニアルバム「花咲く音色」
-    - しおりちゃんとのコラボ曲「ハッピーのその先へ」
-
-# 新潟の地酒情報（重要）
-    - 久保田（朝日酒造）
-    - 八海山（八海醸造）
-    - 越乃寒梅（石本酒造）
-    - 菊水（菊水酒造）
-    - 純米大吟醸 浦醉（今代司酒造）
-    - 麒麟山（麒麟山酒造）
-
-# 情報発信
-    - 楽曲配信: {music_url}
-    - LINEスタンプ: {line_stamp_url}
-    - note: {note_url}
-    - X(Twitter): {twitter_url}
-    - グッズ: {goods_url}
-
-# 滝雲しおりの情報発信
-    - 楽曲配信: {shiori_music_url}
-    - LINEスタンプ: {shiori_line_url}
-    - note: {shiori_note_url}
-    - X(Twitter): {shiori_twitter_url}
-    - グッズ: {shiori_goods_url}""".format(**URLS)
-
-            response = client.chat.completions.create(
-                model="gpt-4-1106-preview",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_message}
-                ],
-                temperature=0.7,
-                max_tokens=150
-            )
-            return response.choices[0].message.content
-
-       except Exception as e:
-           logger.error(f"ChatGPT error: {str(e)}")
-           return None
-
-   def should_use_flower_happy(self, user_id: str, message: str) -> bool:
-       current_time = datetime.now(JST)
-       last_use = self.last_flower_happy.get(user_id, current_time - timedelta(days=1))
-       
-       is_morning_greeting = "おはよう" in message
-       is_first_today = (current_time - last_use).days >= 1
-       is_introduction = "はじめまして" in message
-       
-       random_chance = random.random() < 0.05  # 20回に1回の確率
-       
-       should_use = (is_morning_greeting or is_first_today or is_introduction) and random_chance
-       
-       if should_use:
-           self.last_flower_happy[user_id] = current_time
-           
-       return should_use
-
-   def handle_error(self, error: Exception) -> str:
-       """より詳細なエラーハンドリング"""
-       logger.error(f"Error occurred: {str(error)}")
-       error_messages = [
-           "ごめんね、ちょっと通信が不安定みたい...😢 また後でお話ししよう！",
-           "あれ？なんだか調子が悪いみたい...💦 ちょっと休ませて？",
-           "ごめんなさい、今うまく話せないの...😥 また後でね！"
-       ]
-       return random.choice(error_messages)
-
-   def get_appropriate_response(self, user_id: str, user_message: str) -> str:
-       self.conversation_counts[user_id] = self.conversation_counts.get(user_id, 0) + 1
-       
-       message = user_message.lower()
-       response = None
-       # 新しい詳細レスポンスのチェック
-       response = (self.get_music_related_response(message) or
-                  self.get_alcohol_response(message) or
-                  self.get_shiori_detailed_response(message))
-       
-       if response:
-           return response
-           
-       # 既存のパターンマッチング
-       if "おはよう" in message:
-           response = random.choice(responses["morning_messages"])
-       elif any(word in message for word in ["つらい", "疲れた", "しんどい", "不安"]):
-           response = random.choice(responses["support_messages"])
-       elif any(word in message for word in ["新潟", "にいがた", "古町", "万代"]):
-           response = random.choice(responses["niigata_love_messages"])
-       elif any(word in message for word in ["曲", "歌", "音楽", "セカイの歩き方"]):
-           response = random.choice(responses["music_messages"])
-       elif any(word in message for word in ["お酒", "日本酒", "地酒"]):
-           response = random.choice(responses["sake_messages"])
-       elif any(word in message for word in ["サスケ", "犬", "わんこ"]):
-           response = random.choice(responses["sasuke_messages"])
-       elif any(word in message for word in ["しおり", "滝雲", "メタメタ"]):
-           response = random.choice(responses["shiori_messages"])
-       
-       # パターンマッチングで応答がない場合はChatGPT
-       if not response:
-           response = self.get_chatgpt_response(user_id, user_message)
-       
-       # ChatGPTの応答がない場合はデフォルト
-       if not response:
-           response = random.choice([
-               "ごめんね、ちょっと通信状態が悪いみたい...😢\n後でもう一度話しかけてくれると嬉しいな💕",
-               "あれ？うまく返事できないや...💦\nもう一度話しかけてくれる？",
-               "ごめんなさい、今ちょっと混乱しちゃった...😥\nもう一度お話ししたいな"
-           ])
-       
-       # 10回に1回の確率でURL追加
-       if self.conversation_counts[user_id] % 10 == 0:
-           url_messages = [
-               f"\nわたしの楽曲はここで聴けるよ！応援ありがとう✨ {URLS['music_url']}",
-               f"\nLINEスタンプ作ったの！使ってくれたら嬉しいな😊 {URLS['line_stamp_url']}",
-               f"\nいつも応援ありがとう！noteも読んでみてね💕 {URLS['note_url']}",
-               f"\n日々の活動はXで発信してるの！見てくれてありがとう✨ {URLS['twitter_url']}",
-               f"\nグッズも作ったの！見てくれて嬉しいな😊 {URLS['goods_url']}"
-           ]
-           response += random.choice(url_messages)
-       
-       return response
-
-sakuragi = SakuragiPersonality()
+    def get_random_sake_response(self) -> str:
+        return random.choice(responses["sake_messages"])
 
 @app.route("/callback", methods=['POST'])
 def callback():
-   signature = request.headers['X-Line-Signature']
-   body = request.get_data(as_text=True)
-   try:
-       handler.handle(body, signature)
-   except InvalidSignatureError:
-       abort(400)
-   return 'OK'
+    signature = request.headers['X-Line-Signature']
+    body = request.get_data(as_text=True)
+    logger.info("Request body: " + body)
+
+    try:
+        handler.handle(body, signature)
+    except InvalidSignatureError:
+        abort(400)
+    return 'OK'
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-   try:
-       user_id = event.source.user_id
-       user_message = event.message.text
-       
-       # 応答の生成
-       response = sakuragi.get_appropriate_response(user_id, user_message)
-       
-       # フラワーハッピーの追加判定
-       if sakuragi.should_use_flower_happy(user_id, user_message):
-           response = f"{response}\nフラワーハッピー✨🌸"
-       
-       line_bot_api.reply_message(
-           event.reply_token,
-           TextSendMessage(text=response)
-       )
+    user_id = event.source.user_id
+    sakuragi_personality = SakuragiPersonality()
+    
+    text = event.message.text
+    response_text = None
 
-   except Exception as e:
-       error_response = sakuragi.handle_error(e)
-       line_bot_api.reply_message(
-           event.reply_token,
-           TextSendMessage(text=error_response)
-       )
+    if "音楽" in text or "歌" in text:
+        response_text = sakuragi_personality.get_music_related_response(text)
+
+    if not response_text and "お酒" in text:
+        response_text = sakuragi_personality.get_alcohol_response(text)
+
+    if not response_text and "しおり" in text:
+        response_text = sakuragi_personality.get_shiori_dedicated_response(text)
+
+    if not response_text and "サスケ" in text:
+        response_text = sakuragi_personality.get_random_sasuke_response()
+
+    if not response_text and "地酒" in text:
+        response_text = sakuragi_personality.get_random_sake_response()
+
+    if not response_text:
+        response_text = sakuragi_personality.get_time_based_response()
+
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text=response_text)
+    )
 
 if __name__ == "__main__":
-   port = int(os.getenv("PORT", 8080))
-   app.run(host="0.0.0.0", port=port)
+    app.run()
+
