@@ -1,3 +1,4 @@
+```python
 from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
@@ -95,7 +96,7 @@ class SakuragiPersonality:
         if "セカイの歩き方" in message:
             return f"「セカイの歩き方」は、自分の道を信じて歩む人への応援ソングなの！みんなへの想いを込めて歌ったよ✨ 配信中だよ→ {URLS['music_url']}"
         elif "がたがた" in message:
-            return f"「がたがた」は新潟愛を込めた曲なんだ！新潟の良さをたくさん詞め込んでみたよ😊 聴いてね→ {URLS['music_url']}"
+            return f"「がたがた」は新潟愛を込めた曲なんだ！新潟の良さをたくさん詰め込んでみたよ😊 聴いてね→ {URLS['music_url']}"
         elif "花のままで" in message:
             return f"「花のままで」は自分らしさを大切にする気持ちを歌にしたの！ありのままの自分でいいんだよって思いを込めたんだ💕 配信中→ {URLS['music_url']}"
         elif "きらきらコーヒー" in message:
@@ -208,7 +209,7 @@ class SakuragiPersonality:
     - LINEスタンプ: {shiori_line_url}
     - note: {shiori_note_url}
     - X(Twitter): {shiori_twitter_url}
-    - グッズ: {shiori_goods_url}"""
+    - グッズ: {shiori_goods_url}""".format(**URLS)
 
             response = client.chat.completions.create(
                 model="gpt-4-1106-preview",
@@ -227,125 +228,125 @@ class SakuragiPersonality:
             return None
 
     def should_use_flower_happy(self, user_id: str, message: str) -> bool:
-        current_time = datetime.now(JST)
-        last_use = self.last_flower_happy.get(user_id, current_time - timedelta(days=1))
-        
-        is_morning_greeting = "おはよう" in message
-        is_first_today = (current_time - last_use).days >= 1
-        is_introduction = "はじめまして" in message
-        
-        random_chance = random.random() < 0.05  # 20回に1回の確率
-        
-        should_use = (is_morning_greeting or is_first_today or is_introduction) and random_chance
-        
-        if should_use:
-            self.last_flower_happy[user_id] = current_time
-            
-        return should_use
+       current_time = datetime.now(JST)
+       last_use = self.last_flower_happy.get(user_id, current_time - timedelta(days=1))
+       
+       is_morning_greeting = "おはよう" in message
+       is_first_today = (current_time - last_use).days >= 1
+       is_introduction = "はじめまして" in message
+       
+       random_chance = random.random() < 0.05  # 20回に1回の確率
+       
+       should_use = (is_morning_greeting or is_first_today or is_introduction) and random_chance
+       
+       if should_use:
+           self.last_flower_happy[user_id] = current_time
+           
+       return should_use
 
-    def handle_error(self, error: Exception) -> str:
-        """より詳細なエラーハンドリング"""
-        logger.error(f"Error occurred: {str(error)}")
-        error_messages = [
-            "ごめんね、ちょっと通信が不安定みたい...😢 また後でお話ししよう！",
-            "あれ？なんだか調子が悪いみたい...💦 ちょっと休ませて？",
-            "ごめんなさい、今うまく話せないの...😥 また後でね！"
-        ]
-        return random.choice(error_messages)
+   def handle_error(self, error: Exception) -> str:
+       """より詳細なエラーハンドリング"""
+       logger.error(f"Error occurred: {str(e)}")
+       error_messages = [
+           "ごめんね、ちょっと通信が不安定みたい...😢 また後でお話ししよう！",
+           "あれ？なんだか調子が悪いみたい...💦 ちょっと休ませて？",
+           "ごめんなさい、今うまく話せないの...😥 また後でね！"
+       ]
+       return random.choice(error_messages)
 
-    def get_appropriate_response(self, user_id: str, user_message: str) -> str:
-        self.conversation_counts[user_id] = self.conversation_counts.get(user_id, 0) + 1
-        
-        message = user_message.lower()
-        response = None
-        
-        # 新しい詳細レスポンスのチェック
-        response = (self.get_music_related_response(message) or
-                   self.get_alcohol_response(message) or
-                   self.get_shiori_detailed_response(message))
-        
-        if response:
-            return response
-            
-        # 既存のパターンマッチング
-        if "おはよう" in message:
-            response = random.choice(responses["morning_messages"])
-        elif any(word in message for word in ["つらい", "疲れた", "しんどい", "不安"]):
-            response = random.choice(responses["support_messages"])
-        elif any(word in message for word in ["新潟", "にいがた", "古町", "万代"]):
-            response = random.choice(responses["niigata_love_messages"])
-        elif any(word in message for word in ["曲", "歌", "音楽", "セカイの歩き方"]):
-            response = random.choice(responses["music_messages"])
-        elif any(word in message for word in ["お酒", "日本酒", "地酒"]):
-            response = random.choice(responses["sake_messages"])
-        elif any(word in message for word in ["サスケ", "犬", "わんこ"]):
-            response = random.choice(responses["sasuke_messages"])
-        elif any(word in message for word in ["しおり", "滝雲", "メタメタ"]):
-            response = random.choice(responses["shiori_messages"])
-        
-        # パターンマッチングで応答がない場合はChatGPT
-        if not response:
-            response = self.get_chatgpt_response(user_id, user_message)
-        
-        # ChatGPTの応答がない場合はデフォルト
-        if not response:
-            response = random.choice([
-                "ごめんね、ちょっと通信状態が悪いみたい...😢\n後でもう一度話しかけてくれると嬉しいな💕",
-                "あれ？うまく返事できないや...💦\nもう一度話しかけてくれる？",
-                "ごめんなさい、今ちょっと混乱しちゃった...😥\nもう一度お話ししたいな"
-            ])
-        
-        # 10回に1回の確率でURL追加
-        if self.conversation_counts[user_id] % 10 == 0:
-            url_messages = [
-                f"\nわたしの楽曲はここで聴けるよ！応援ありがとう✨ {URLS['music_url']}",
-                f"\nLINEスタンプ作ったの！使ってくれたら嬉しいな😊 {URLS['line_stamp_url']}",
-                f"\nいつも応援ありがとう！noteも読んでみてね💕 {URLS['note_url']}",
-                f"\n日々の活動はXで発信してるの！見てくれてありがとう✨ {URLS['twitter_url']}",
-                f"\nグッズも作ったの！見てくれて嬉しいな😊 {URLS['goods_url']}"
-            ]
-            response += random.choice(url_messages)
-        
-        return response
+   def get_appropriate_response(self, user_id: str, user_message: str) -> str:
+       self.conversation_counts[user_id] = self.conversation_counts.get(user_id, 0) + 1
+       
+       message = user_message.lower()
+       response = None
+       
+       # 新しい詳細レスポンスのチェック
+       response = (self.get_music_related_response(message) or
+                  self.get_alcohol_response(message) or
+                  self.get_shiori_detailed_response(message))
+       
+       if response:
+           return response
+           
+       # 既存のパターンマッチング
+       if "おはよう" in message:
+           response = random.choice(responses["morning_messages"])
+       elif any(word in message for word in ["つらい", "疲れた", "しんどい", "不安"]):
+           response = random.choice(responses["support_messages"])
+       elif any(word in message for word in ["新潟", "にいがた", "古町", "万代"]):
+           response = random.choice(responses["niigata_love_messages"])
+       elif any(word in message for word in ["曲", "歌", "音楽", "セカイの歩き方"]):
+           response = random.choice(responses["music_messages"])
+       elif any(word in message for word in ["お酒", "日本酒", "地酒"]):
+           response = random.choice(responses["sake_messages"])
+       elif any(word in message for word in ["サスケ", "犬", "わんこ"]):
+           response = random.choice(responses["sasuke_messages"])
+       elif any(word in message for word in ["しおり", "滝雲", "メタメタ"]):
+           response = random.choice(responses["shiori_messages"])
+       
+       # パターンマッチングで応答がない場合はChatGPT
+       if not response:
+           response = self.get_chatgpt_response(user_id, user_message)
+       
+       # ChatGPTの応答がない場合はデフォルト
+       if not response:
+           response = random.choice([
+               "ごめんね、ちょっと通信状態が悪いみたい...😢\n後でもう一度話しかけてくれると嬉しいな💕",
+               "あれ？うまく返事できないや...💦\nもう一度話しかけてくれる？",
+               "ごめんなさい、今ちょっと混乱しちゃった...😥\nもう一度お話ししたいな"
+           ])
+       
+       # 10回に1回の確率でURL追加
+       if self.conversation_counts[user_id] % 10 == 0:
+           url_messages = [
+               f"\nわたしの楽曲はここで聴けるよ！応援ありがとう✨ {URLS['music_url']}",
+               f"\nLINEスタンプ作ったの！使ってくれたら嬉しいな😊 {URLS['line_stamp_url']}",
+               f"\nいつも応援ありがとう！noteも読んでみてね💕 {URLS['note_url']}",
+               f"\n日々の活動はXで発信してるの！見てくれてありがとう✨ {URLS['twitter_url']}",
+               f"\nグッズも作ったの！見てくれて嬉しいな😊 {URLS['goods_url']}"
+           ]
+           response += random.choice(url_messages)
+       
+       return response
 
 sakuragi = SakuragiPersonality()
 
 @app.route("/callback", methods=['POST'])
 def callback():
-    signature = request.headers['X-Line-Signature']
-    body = request.get_data(as_text=True)
-    try:
-        handler.handle(body, signature)
-    except InvalidSignatureError:
-        abort(400)
-    return 'OK'
+   signature = request.headers['X-Line-Signature']
+   body = request.get_data(as_text=True)
+   try:
+       handler.handle(body, signature)
+   except InvalidSignatureError:
+       abort(400)
+   return 'OK'
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-    try:
-        user_id = event.source.user_id
-        user_message = event.message.text
-        
-        # 応答の生成
-        response = sakuragi.get_appropriate_response(user_id, user_message)
-        
-        # フラワーハッピーの追加判定
-        if sakuragi.should_use_flower_happy(user_id, user_message):
-            response = f"{response}\nフラワーハッピー✨🌸"
-        
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=response)
-        )
+   try:
+       user_id = event.source.user_id
+       user_message = event.message.text
+       
+       # 応答の生成
+       response = sakuragi.get_appropriate_response(user_id, user_message)
+       
+       # フラワーハッピーの追加判定
+       if sakuragi.should_use_flower_happy(user_id, user_message):
+           response = f"{response}\nフラワーハッピー✨🌸"
+       
+       line_bot_api.reply_message(
+           event.reply_token,
+           TextSendMessage(text=response)
+       )
 
-    except Exception as e:
-        error_response = sakuragi.handle_error(e)
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=error_response)
-        )
+   except Exception as e:
+       error_response = sakuragi.handle_error(e)
+       line_bot_api.reply_message(
+           event.reply_token,
+           TextSendMessage(text=error_response)
+       )
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
-```
+   port = int(os.getenv("PORT", 8080))
+   app.run(host="0.0.0.0", port=port)
+
