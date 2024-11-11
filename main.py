@@ -12,27 +12,20 @@ from typing import Optional, Dict
 from datetime import datetime, timezone, timedelta
 import logging
 
-# ロギング設定
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-# 環境変数の読み込み
 load_dotenv()
-
-# Flaskのインスタンスを作成
 app = Flask(__name__)
 
-# LINE Botの設定
 line_bot_api = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN'))
 handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 
-# 日本時間の設定
 JST = timezone(timedelta(hours=+9), 'JST')
 
-# URL定数の定義
 URLS = {
     'music_url': "https://www.tunecore.co.jp/artists?id=877913",
     'line_stamp_url': "https://store.line.me/stickershop/product/26678877/ja",
@@ -46,7 +39,6 @@ URLS = {
     'shiori_goods_url': "https://suzuri.jp/sasuke_wanko"
 }
 
-# 応答メッセージの定義
 responses = {
     "morning_messages": [
         "おはよう！今日も新潟は素敵な朝だよ！いつも応援ありがとう😊✨",
@@ -87,12 +79,11 @@ responses = {
 
 class SakuragiPersonality:
     def __init__(self):
-        self.last_flower_happy = {}  # ユーザーごとのフラワーハッピー使用時刻
-        self.conversation_counts = {}  # ユーザーごとの会話カウント
-        self.user_states = {}  # ユーザーごとの状態管理
+        self.last_flower_happy = {}
+        self.conversation_counts = {}
+        self.user_states = {}
 
     def get_music_related_response(self, message: str) -> Optional[str]:
-        """楽曲関連の詳細な応答を生成"""
         if "セカイの歩き方" in message:
             return f"「セカイの歩き方」は、自分の道を信じて歩む人への応援ソングなの！みんなへの想いを込めて歌ったよ✨ 配信中だよ→ {URLS['music_url']}"
         elif "がたがた" in message:
@@ -110,7 +101,6 @@ class SakuragiPersonality:
         return None
 
     def get_alcohol_response(self, message: str) -> Optional[str]:
-        """お酒関連の詳細な応答を生成"""
         if any(word in message for word in ["ビール", "発泡酒"]):
             return "ビールも大好き！特に新潟の地ビールとか、クラフトビールに興味があるんだ✨"
         elif "ワイン" in message:
@@ -120,7 +110,6 @@ class SakuragiPersonality:
         return None
 
     def get_shiori_detailed_response(self, message: str) -> Optional[str]:
-        """しおりちゃん関連の詳細な応答を生成"""
         if "しおり" in message or "滝雲" in message:
             responses = [
                 f"しおりちゃんは17歳の親友なの！福島県出身で、今は新潟で一緒に活動してるんだ✨ 黒猫のサチコと暮らしてて、ギターがすっごく上手いんだよ！",
@@ -220,14 +209,13 @@ class SakuragiPersonality:
                 temperature=0.7,
                 max_tokens=150
             )
-            
             return response.choices[0].message.content
 
-        except Exception as e:
-            logger.error(f"ChatGPT error: {str(e)}")
-            return None
+       except Exception as e:
+           logger.error(f"ChatGPT error: {str(e)}")
+           return None
 
-    def should_use_flower_happy(self, user_id: str, message: str) -> bool:
+   def should_use_flower_happy(self, user_id: str, message: str) -> bool:
        current_time = datetime.now(JST)
        last_use = self.last_flower_happy.get(user_id, current_time - timedelta(days=1))
        
@@ -246,7 +234,7 @@ class SakuragiPersonality:
 
    def handle_error(self, error: Exception) -> str:
        """より詳細なエラーハンドリング"""
-       logger.error(f"Error occurred: {str(e)}")
+       logger.error(f"Error occurred: {str(error)}")
        error_messages = [
            "ごめんね、ちょっと通信が不安定みたい...😢 また後でお話ししよう！",
            "あれ？なんだか調子が悪いみたい...💦 ちょっと休ませて？",
@@ -259,7 +247,6 @@ class SakuragiPersonality:
        
        message = user_message.lower()
        response = None
-       
        # 新しい詳細レスポンスのチェック
        response = (self.get_music_related_response(message) or
                   self.get_alcohol_response(message) or
@@ -349,4 +336,3 @@ def handle_message(event):
 if __name__ == "__main__":
    port = int(os.getenv("PORT", 8080))
    app.run(host="0.0.0.0", port=port)
-
