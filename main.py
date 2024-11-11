@@ -30,7 +30,6 @@ handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 # 日本時間の設定
 JST = timezone(timedelta(hours=+9), 'JST')
 
-# URL定数の定義（既存のまま維持）
 # URL定数の定義
 URLS = {
     'music_url': "https://www.tunecore.co.jp/artists?id=877913",
@@ -45,7 +44,6 @@ URLS = {
     'shiori_goods_url': "https://suzuri.jp/sasuke_wanko"
 }
 
-# 応答メッセージの定義（既存のまま維持）
 # 応答メッセージの定義
 responses = {
     "morning_messages": [
