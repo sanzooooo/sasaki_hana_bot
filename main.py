@@ -321,7 +321,6 @@ class SakuragiPersonality:
                 f"\nグッズも作ったの！見てくれて嬉しいな😊 {URLS['goods_url']}"
             ]
             response += random.choice(url_additions)
-            response += random.choice(url_messages)
 
         return response
 
