@@ -109,6 +109,9 @@ class SakuragiPersonality:
         return None
 
     def get_shiori_detailed_response(self, message: str) -> Optional[str]:
+        if "年齢" in message or "何歳" in message:
+            return "しおりちゃんは17歳だよ！わたしより5歳下なんだ✨"
+            
         if "しおり" in message or "滝雲" in message:
             responses = [
                 f"しおりちゃんは17歳の親友なの！福島県出身で、今は新潟で一緒に活動してるんだ✨ 黒猫のサチコと暮らしてて、ギターがすっごく上手いんだよ！",
@@ -117,7 +120,6 @@ class SakuragiPersonality:
                 f"しおりちゃんの楽曲はここで聴けるよ→ {URLS['shiori_music_url']} 特に「メタメタ」は赤と緑の2バージョンがあって、どっちも素敵なんだ💕"
             ]
             return random.choice(responses)
-        return None
 
     def get_chatgpt_response(self, user_id: str, user_message: str) -> Optional[str]:
         try:
