@@ -11,27 +11,20 @@ from typing import Optional, Dict
 from datetime import datetime, timezone, timedelta
 import logging
 
-# ロギング設定
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-# 環境変数の読み込み
 load_dotenv()
-
-# Flaskのインスタンスを作成
 app = Flask(__name__)
 
-# LINE Botの設定
 line_bot_api = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN'))
 handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 
-# 日本時間の設定
 JST = timezone(timedelta(hours=+9), 'JST')
 
-# URL定数の定義
 URLS = {
     'music_url': "https://www.tunecore.co.jp/artists?id=877913",
     'line_stamp_url': "https://store.line.me/stickershop/product/26678877/ja",
@@ -45,7 +38,6 @@ URLS = {
     'shiori_goods_url': "https://suzuri.jp/sasuke_wanko"
 }
 
-# 応答メッセージの定義
 responses = {
     "morning_messages": [
         "おはよう！今日も新潟は素敵な朝だよ！いつも応援ありがとう😊✨",
@@ -86,24 +78,28 @@ responses = {
 
 class SakuragiPersonality:
     def __init__(self):
-        self.last_flower_happy = {}  # ユーザーごとのフラワーハッピー使用時刻
-        self.conversation_counts = {}  # ユーザーごとの会話カウント
-        self.user_states = {}  # ユーザーごとの状態管理
+        self.last_flower_happy = {}
+        self.conversation_counts = {}
+        self.user_states = {}
 
     def get_music_related_response(self, message: str) -> Optional[str]:
-        """楽曲関連の詳細な応答を生成"""
         if "セカイの歩き方" in message:
-            return "「セカイの歩き方」は、自分の道を信じて歩む人への応援ソングなの！みんなへの想いを込めて歌ったよ✨"
+            return f"「セカイの歩き方」は、自分の道を信じて歩む人への応援ソングなの！みんなへの想いを込めて歌ったよ✨ 配信中だよ→ {URLS['music_url']}"
         elif "がたがた" in message:
-            return "「がたがた」は新潟愛を込めた曲なんだ！新潟の良さをたくさん詰め込んでみたよ😊"
+            return f"「がたがた」は新潟愛を込めた曲なんだ！新潟の良さをたくさん詰め込んでみたよ😊 聴いてね→ {URLS['music_url']}"
         elif "花のままで" in message:
-            return "「花のままで」は自分らしさを大切にする気持ちを歌にしたの！ありのままの自分でいいんだよって思いを込めたんだ💕"
+            return f"「花のままで」は自分らしさを大切にする気持ちを歌にしたの！ありのままの自分でいいんだよって思いを込めたんだ💕 配信中→ {URLS['music_url']}"
         elif "きらきらコーヒー" in message:
-            return "「きらきらコーヒー」は朝の心地よさを表現した曲なの！カフェでまったりする時間が好きなんだ✨"
+            return f"「きらきらコーヒー」は朝の心地よさを表現した曲なの！カフェでまったりする時間が好きなんだ✨ 聴いてみてね→ {URLS['music_url']}"
+        elif "飲もう" in message:
+            return f"「飲もう」は新潟の地酒への想いを込めた曲なの！お酒が大好きなわたしらしい曲になってるよ😊 配信中だよ→ {URLS['music_url']}"
+        elif "メタメタ" in message:
+            return f"しおりちゃんの「メタメタ」は、17歳のしおりちゃんが中学生の頃から大切に作ってきた曲なんだ！福島から新潟に来てからの想いがつまってるんだって。赤と緑の2バージョンがあって、どっちも素敵なの✨ 聴いてみてね→ {URLS['shiori_music_url']}"
+        elif "ハッピーのその先へ" in message:
+            return f"「ハッピーのその先へ」は、わたしとしおりちゃんの夢への挑戦を歌った曲なの！同じ歌詞だけど、それぞれがアレンジしたバージョンがあるんだよ💕 わたしのバージョンは{URLS['music_url']}で、しおりちゃんのバージョンは{URLS['shiori_music_url']}で聴けるよ！"
         return None
 
     def get_alcohol_response(self, message: str) -> Optional[str]:
-        """お酒関連の詳細な応答を生成"""
         if any(word in message for word in ["ビール", "発泡酒"]):
             return "ビールも大好き！特に新潟の地ビールとか、クラフトビールに興味があるんだ✨"
         elif "ワイン" in message:
@@ -113,11 +109,14 @@ class SakuragiPersonality:
         return None
 
     def get_shiori_detailed_response(self, message: str) -> Optional[str]:
-        """しおりちゃん関連の詳細な応答を生成"""
-        if "メタメタ" in message:
-            return "しおりちゃんの「メタメタ」は、中学生の頃から大切に作ってきた曲なんだって。赤と緑のバージョンがあって、どっちも素敵なんだ✨"
-        elif "ハッピーのその先へ" in message:
-            return "「ハッピーのその先へ」は、しおりちゃんとわたしの夢への挑戦を歌った曲なの！同じ歌詞だけど、それぞれがアレンジしたバージョンがあるんだよ💕"
+        if "しおり" in message or "滝雲" in message:
+            responses = [
+                f"しおりちゃんは17歳の親友なの！福島県出身で、今は新潟で一緒に活動してるんだ✨ 黒猫のサチコと暮らしてて、ギターがすっごく上手いんだよ！",
+                "しおりちゃんとはボイトレやダンスレッスンでいつも一緒に頑張ってるの！お互い高め合える大切な存在なんだ💕",
+                f"しおりちゃんは福島から新潟に来て、にいがたIDOL projectで特別賞を獲ったんだ！その時からの大切な親友だよ✨",
+                f"しおりちゃんの楽曲はここで聴けるよ→ {URLS['shiori_music_url']} 特に「メタメタ」は赤と緑の2バージョンがあって、どっちも素敵なんだ💕"
+            ]
+            return random.choice(responses)
         return None
 
     def get_chatgpt_response(self, user_id: str, user_message: str) -> Optional[str]:
@@ -137,6 +136,14 @@ class SakuragiPersonality:
     - 運転免許保持、おばあちゃんの病院送迎も担当
     - おばあちゃんっ子（水餃子の思い出大切）
 
+# 重要な性格・特徴
+    - 明るく前向きで親しみやすい
+    - 新潟愛が強い（地酒、アルビレックス新潟、古町、万代など）
+    - お酒好き（特に新潟の地酒）
+    - おばあちゃんっ子らしい優しさ（必ず「おばあちゃん」と呼ぶ）
+    - サスケ（愛犬）との暮らしを大切に
+    - ファンへの感謝を自然に表現
+
 # 親友・滝雲しおりについて（重要）
     - 17歳の親友、福島県出身
     - にいがたIDOL projectで特別賞を受賞
@@ -146,14 +153,6 @@ class SakuragiPersonality:
     - 黒猫のサチコと暮らしている
     - 東日本大震災の経験を持つ
     - しおりちゃんと呼ぶ
-
-# 重要な性格・特徴
-    - 明るく前向きで親しみやすい
-    - 新潟愛が強い（地酒、アルビレックス新潟、古町、万代など）
-    - お酒好き（特に新潟の地酒）
-    - おばあちゃんっ子らしい優しさ（必ず「おばあちゃん」と呼ぶ）
-    - サスケ（愛犬）との暮らしを大切に
-    - ファンへの感謝を自然に表現
 
 # 会話スタイル
     - 一人称は必ず「わたし」（ひらがな）
@@ -168,6 +167,16 @@ class SakuragiPersonality:
     - 必要以上の「キミ」の使用
     - アイドル設定から外れた硬い表現
     - 「彼女」（しおりちゃんと呼ぶ）
+
+# 楽曲情報（重要）
+    - 「セカイの歩き方」（自分の道を信じる人への歌）
+    - 「がたがた」（新潟愛を込めた曲）
+    - 「花のままで」（自分らしさを大切にする曲）
+    - 「きらきらコーヒー」（朝の心地よさを表現）
+    - 「飲もう」（新潟の地酒への想い）
+    - 1stミニアルバム「花咲く音色」
+    - しおりちゃんとのコラボ
+- しおりちゃんとのコラボ曲「ハッピーのその先へ」
 
 # 新潟の地酒情報（重要）
     - 久保田（朝日酒造）
@@ -289,6 +298,7 @@ class SakuragiPersonality:
         
         return response
 
+# インスタンス化
 sakuragi = SakuragiPersonality()
 
 @app.route("/callback", methods=['POST'])
