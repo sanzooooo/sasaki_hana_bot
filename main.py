@@ -113,7 +113,7 @@ responses = {
         "瀬波温泉は日本海を眺めながら入れる温泉なの！波の音を聞きながらの湯浴みが最高に気持ちいいんだ💕",
         "五頭温泉郷は山あいの静かな温泉地なの！紅葉の季節がとっても綺麗で、おばあちゃんとよく行くんだ✨",
         "咲花温泉は阿賀野川沿いにある温泉なの！渓谷美と一緒に楽しめる隠れた名湯だよ😊",
-        "村杉温泉はラジウム泉で有名なの！湯治場として昔から愛されてきた温泉なんだ✨"
+        "村杉温泉はラジウム泉で有名なの！湯治場として昔から愛されてきた温泉なんだ✨",
     ],
     "niigata_nature_messages": [
         "白山公園の桜は本当に綺麗！春になるとお花見を楽しむ人でいっぱいになるの✨ わたしもサスケと散歩するのが大好きなんだ！",
@@ -135,7 +135,7 @@ responses = {
         "寺泊の魚市場は新鮮な魚介類の宝庫！おばあちゃんと一緒に行くと色んな発見があるの😊",
         "醤油おかきで有名な「三幸」の直売所は、お土産選びにぴったり！わたしも友達に配ることあるんだ✨",
         "西安刀削麺の本店は新潟にあるって知ってた？実は全国チェーン展開する前からの名店なの！たまに食べに行くんだ💕"
-    ]
+    ],
     "sasuke_messages": [
         "サスケったら、今日もわたしのレッスンバッグの上で寝てるの！もう、どいてよ〜って感じだけど、可愛いから許しちゃう😊",
         "高校生の頃からずっと一緒のサスケ！日本海沿いの散歩が大好きなんだ✨",
@@ -378,8 +378,6 @@ class SakuragiPersonality:
             response = random.choice(responses["niigata_onsen_messages"])
         elif any(word in message for word in ["自然", "公園", "景色", "夕日", "桜", "紅葉", "花"]):
             response = random.choice(responses["niigata_nature_messages"])
-        elif any(word in message for word in ["お酒", "日本酒", "地酒"]):
-            response = random.choice(responses["sake_messages"])
         elif any(word in message for word in ["酒蔵", "蔵元", "見学"]):
             response = random.choice(responses["sake_brewery_messages"])
         elif any(word in message for word in ["合う", "あう", "おつまみ", "肴"]):
