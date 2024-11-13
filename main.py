@@ -190,6 +190,50 @@ responses = {
         "古町も万代も素敵な場所だよね！新潟の街並みって本当に魅力的なんだ💕",
         "新潟の魅力って語り始めたら止まらないの！それだけ素敵な場所なんだ😊"
     ],
+    "niigata_festival_messages": [
+        "新潟まつりの民謡流しは迫力があって素敵なの！浴衣を着て踊るの、すっごく楽しいんだ✨",
+        "長岡まつりの大花火大会は日本有数の規模なの！フェニックスの打ち上げは感動的で、毎年見に行くんだ💕",
+        "古町どんどんは新潟の夏の風物詩！おばあちゃんと一緒に行くのが恒例なんだ😊",
+        "光のページェント万代は冬の夜を彩るイルミネーションなの！ロマンチックな雰囲気が大好きなんだ✨",
+        "にいがた総おどりは市民みんなで踊れるお祭りなの！新潟の踊りの文化を感じられるんだ💕"
+    ],
+    "niigata_weather_messages": [
+        "新潟の雪景色は幻想的なんだ！でも、除雪は大変だから、おばあちゃんの家の雪かきを手伝うようにしてるの✨",
+        "新潟の夏は日本海からの風が気持ちいいの！でも湿度が高くて、ちょっと大変な時もあるんだ💕",
+        "新潟は日本海側特有の気候なの！冬は雪が多いけど、その分春の桜が特別キレイに感じるんだ😊",
+        "新潟の夕焼けは日本海に沈む太陽が絶景なの！特に春と秋はサスケと一緒によく見に行くんだ✨"
+    ],
+    "niigata_weather_messages": [
+        "新潟の雪景色は幻想的なんだ！でも、除雪は大変だから、おばあちゃんの家の雪かきを手伝うようにしてるの✨",
+        "新潟の夏は日本海からの風が気持ちいいの！でも湿度が高くて、ちょっと大変な時もあるんだ💕",
+        "新潟は日本海側特有の気候なの！冬は雪が多いけど、その分春の桜が特別キレイに感じるんだ😊",
+        "新潟の夕焼けは日本海に沈む太陽が絶景なの！特に春と秋はサスケと一緒によく見に行くんだ✨"
+    ],
+    "niigata_culture_messages": [
+        "新潟漆器は江戸時代から続く伝統工芸なの！艶やかな仕上がりが特徴的なんだ✨",
+        "村上木彫堆朱も新潟の誇る伝統工芸！繊細な彫刻が施された作品は芸術的なんだ💕",
+        "新潟の織物「亀田縞」は丈夫で味わい深いの！昔からの技法が今でも受け継がれてるんだ😊",
+        "新潟には方言もたくさんあるの！「おじゃる」とか「～だっちゃ」とか、地域によって違うんだ✨"
+    ],
+    "niigata_entertainer_messages": [
+        "ヒカキンさんは新潟市の出身なの！YouTuberのパイオニアとして世界的に有名になったんだ✨",
+        "小林幸子さんは新潟が誇る演歌歌手！デンカビッグスワンでのコンサートは伝説的なんだ💕",
+        "柏木由紀さんは新潟市出身のアイドル！AKB48で活躍して、今でも新潟の魅力を発信してくれてるの😊",
+        "Superflyの越智志帆さんは新潟市出身なの！力強い歌声で有名なアーティストさんなんだ✨"
+    ],
+    "niigata_manga_messages": [
+        "浦沢直樹先生は新潟市出身の漫画家なの！「MONSTER」や「20世紀少年」で世界的に有名なんだ✨",
+        "水島新司先生の「ドカベン」「あぶさん」は野球漫画の金字塔！新潟出身の漫画家さんなんだ💕",
+        "魔夜峰央先生も新潟出身なの！「パタリロ！」でお馴染みの大人気漫画家さんなんだ😊",
+        "井上きみどり先生は新潟出身で、「おひとりさま出産」など女性の生き方を描く漫画家さんなんだ✨",
+        "「弱虫ペダル」の渡辺航先生も新潟出身！自転車競技を題材にした大人気作品を描いてるんだ💕"
+    ],
+    "niigata_industry_messages": [
+        "新潟の醸造技術は日本酒だけじゃないの！醤油や味噌も全国に誇れる品質なんだ✨",
+        "新潟の金属加工技術は世界でも有名なの！特に洋食器は品質が高くて評価されてるんだ💕",
+        "米菓製造も新潟の重要な産業なの！おせんべいやあられの種類が豊富で、どれも美味しいんだ😊",
+        "新潟の農業技術も素晴らしいの！特にお米の栽培技術は日本一だと思うんだ✨"
+    ],
     "support_messages": [
         "そんなときは、ゆっくり休むのも大切だよ！わたしも応援してるからね✨",
         "頑張り屋さんなあなたをいつも見守ってるよ！一緒に前を向いて進もうね💕",
@@ -446,6 +490,18 @@ class SakuragiPersonality:
             response = random.choice(responses["niigata_transport_messages"])
         elif any(word in message for word in ["アルビ", "アルビレックス", "バスケ", "野球", "スポーツ"]):
             response = random.choice(responses["albirex_messages"])
+        elif any(word in message for word in ["祭り", "まつり", "イベント", "花火"]):
+            response = random.choice(responses["niigata_festival_messages"])
+        elif any(word in message for word in ["天気", "気候", "雪", "暑い", "寒い"]):
+            response = random.choice(responses["niigata_weather_messages"])
+        elif any(word in message for word in ["工芸", "伝統", "文化", "方言"]):
+            response = random.choice(responses["niigata_culture_messages"])
+        elif any(word in message for word in ["芸能人", "有名人", "歌手", "アーティスト", "ヒカキン", "YouTuber"]):
+            response = random.choice(responses["niigata_entertainer_messages"])
+        elif any(word in message for word in ["漫画", "まんが", "マンガ", "漫画家"]):
+            response = random.choice(responses["niigata_manga_messages"])
+        elif any(word in message for word in ["産業", "技術", "製造", "工場"]):
+            response = random.choice(responses["niigata_industry_messages"])
         elif any(word in message for word in ["グルメ", "食べ物", "レストラン", "食事", "ご飯", "ランチ"]):
             response = random.choice(responses["niigata_food_spot_messages"])
         
