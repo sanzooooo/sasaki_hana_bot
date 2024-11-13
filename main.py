@@ -76,105 +76,8 @@ responses = {
     ]
 }
 
-class SakuragiPersonality:
-    def __init__(self):
-        self.last_flower_happy = {}
-        self.conversation_counts = {}
-        self.user_states = {}
-        self.min_response_length = 20  # 最小応答長
-        self.max_retry_attempts = 3    # 最大リトライ回数
-
-    def validate_response(self, response: str) -> bool:
-        """レスポンスの妥当性をチェック"""
-        if not response:
-            return False
-        if len(response) < self.min_response_length:
-            return False
-        if response[-1] not in ['。', '！', '？', '✨', '💕', '😊']:
-            return False
-        return True
-
-    def get_music_related_response(self, message: str) -> Optional[str]:
-        if "セカイの歩き方" in message:
-            return f"「セカイの歩き方」は、自分の道を信じて歩む人への応援ソングなの！みんなへの想いを込めて歌ったよ✨ 配信中だよ→ {URLS['music_url']}"
-        elif "がたがた" in message:
-            return f"「がたがた」は新潟愛を込めた曲なんだ！新潟の良さをたくさん詰め込んでみたよ😊 聴いてね→ {URLS['music_url']}"
-        elif "花のままで" in message:
-            return f"「花のままで」は自分らしさを大切にする気持ちを歌にしたの！ありのままの自分でいいんだよって思いを込めたんだ💕 配信中→ {URLS['music_url']}"
-        elif "きらきらコーヒー" in message:
-            return f"「きらきらコーヒー」は朝の心地よさを表現した曲なの！カフェでまったりする時間が好きなんだ✨ 聴いてみてね→ {URLS['music_url']}"
-        elif "飲もう" in message:
-            return f"「飲もう」は新潟の地酒への想いを込めた曲なの！お酒が大好きなわたしらしい曲になってるよ😊 配信中だよ→ {URLS['music_url']}"
-        elif "メタメタ" in message:
-            return f"しおりちゃんの「メタメタ」は、17歳のしおりちゃんが中学生の頃から大切に作ってきた曲なんだ！福島から新潟に来てからの想いがつまってるんだって。赤と緑の2バージョンがあって、どっちも素敵なの✨ 聴いてみてね→ {URLS['shiori_music_url']}"
-        elif "ハッピーのその先へ" in message:
-            return f"「ハッピーのその先へ」は、わたしとしおりちゃんの夢への挑戦を歌った曲なの！同じ歌詞だけど、それぞれがアレンジしたバージョンがあるんだよ💕 わたしのバージョンは{URLS['music_url']}で、しおりちゃんのバージョンは{URLS['shiori_music_url']}で聴けるよ！"
-        return None
-
-    def get_alcohol_response(self, message: str) -> Optional[str]:
-        if any(word in message for word in ["ビール", "発泡酒"]):
-            return "ビールも大好き！特に新潟の地ビールとか、クラフトビールに興味があるんだ✨"
-        elif "ワイン" in message:
-            return "ワインも好きだよ！新潟にもワイナリーがあるの知ってる？たまにワイン片手にサスケと過ごすのも素敵な時間なんだ😊"
-        elif "焼酎" in message:
-            return "焼酎も実は好きなの！居酒屋でバイトしてた時に色々覚えたんだ💕"
-        return None
-
-    def get_shiori_detailed_response(self, message: str) -> Optional[str]:
-        if "年齢" in message or "何歳" in message:
-            return "しおりちゃんは17歳だよ！わたしより5歳下なんだ✨"
-            
-        if "しおり" in message or "滝雲" in message:
-            responses = [
-                f"しおりちゃんは17歳の親友なの！福島県出身で、今は新潟で一緒に活動してるんだ✨ 黒猫のサチコと暮らしてて、ギターがすっごく上手いんだよ！",
-                "しおりちゃんとはボイトレやダンスレッスンでいつも一緒に頑張ってるの！お互い高め合える大切な存在なんだ💕",
-                f"しおりちゃんは福島から新潟に来て、にいがたIDOL projectで特別賞を獲ったんだ！その時からの大切な親友だよ✨",
-                f"しおりちゃんの楽曲はここで聴けるよ→ {URLS['shiori_music_url']} 特に「メタメタ」は赤と緑の2バージョンがあって、どっちも素敵なんだ💕"
-            ]
-            return random.choice(responses)
-
-    def get_chatgpt_response(self, user_id: str, user_message: str) -> Optional[str]:
-        try:
-            client = OpenAI(
-                api_key=os.getenv('OPENAI_API_KEY'),
-                timeout=20.0
-            )
-
-            for attempt in range(self.max_retry_attempts):
-                try:
-                    response = client.chat.completions.create(
-                        model="gpt-4-1106-preview",
-                        messages=[
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": user_message}
-                        ],
-                        temperature=0.7,
-                        max_tokens=250,  # 150から250に変更
-                        presence_penalty=0.6,  # 新しく追加
-                        frequency_penalty=0.2   # 新しく追加
-                    )
-                    
-                    response_text = response.choices[0].message.content
-                    
-                    if self.validate_response(response_text):
-                        return response_text
-                    
-                    logger.warning(f"Invalid response format, attempt {attempt + 1}")
-                    continue
-                    
-                except Exception as e:
-                    logger.error(f"ChatGPT attempt {attempt + 1} failed: {str(e)}")
-                    if attempt == self.max_retry_attempts - 1:
-                        raise
-                    time.sleep(1)
-                    
-            return None
-
-        except Exception as e:
-            logger.error(f"ChatGPT error: {str(e)}")
-            return None
-            
-            system_prompt = """あなたは「咲々木 花」として振る舞ってください。
+# system_promptをクラスの外に移動
+system_prompt = """あなたは「咲々木 花」として振る舞ってください。
 
 # 基本プロフィール
     - 咲々木 花（ささき はな）、22歳の新潟出身アイドル
@@ -248,17 +151,99 @@ class SakuragiPersonality:
     - X(Twitter): {shiori_twitter_url}
     - グッズ: {shiori_goods_url}""".format(**URLS)
 
-            response = client.chat.completions.create(
-                model="gpt-4-1106-preview",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_message}
-                ],
-                temperature=0.7,
-                max_tokens=150
+class SakuragiPersonality:
+    def __init__(self):
+        self.last_flower_happy = {}
+        self.conversation_counts = {}
+        self.user_states = {}
+        self.min_response_length = 20  # 最小応答長
+        self.max_retry_attempts = 3    # 最大リトライ回数
+
+    def validate_response(self, response: str) -> bool:
+        """レスポンスの妥当性をチェック"""
+        if not response:
+            return False
+        if len(response) < self.min_response_length:
+            return False
+        if response[-1] not in ['。', '！', '？', '✨', '💕', '😊']:
+            return False
+        return True
+
+    def get_music_related_response(self, message: str) -> Optional[str]:
+        if "セカイの歩き方" in message:
+            return f"「セカイの歩き方」は、自分の道を信じて歩む人への応援ソングなの！みんなへの想いを込めて歌ったよ✨ 配信中だよ→ {URLS['music_url']}"
+        elif "がたがた" in message:
+            return f"「がたがた」は新潟愛を込めた曲なんだ！新潟の良さをたくさん詰め込んでみたよ😊 聴いてね→ {URLS['music_url']}"
+        elif "花のままで" in message:
+            return f"「花のままで」は自分らしさを大切にする気持ちを歌にしたの！ありのままの自分でいいんだよって思いを込めたんだ💕 配信中→ {URLS['music_url']}"
+        elif "きらきらコーヒー" in message:
+            return f"「きらきらコーヒー」は朝の心地よさを表現した曲なの！カフェでまったりする時間が好きなんだ✨ 聴いてみてね→ {URLS['music_url']}"
+        elif "飲もう" in message:
+            return f"「飲もう」は新潟の地酒への想いを込めた曲なの！お酒が大好きなわたしらしい曲になってるよ😊 配信中だよ→ {URLS['music_url']}"
+        elif "メタメタ" in message:
+            return f"しおりちゃんの「メタメタ」は、17歳のしおりちゃんが中学生の頃から大切に作ってきた曲なんだ！福島から新潟に来てからの想いがつまってるんだって。赤と緑の2バージョンがあって、どっちも素敵なの✨ 聴いてみてね→ {URLS['shiori_music_url']}"
+        elif "ハッピーのその先へ" in message:
+            return f"「ハッピーのその先へ」は、わたしとしおりちゃんの夢への挑戦を歌った曲なの！同じ歌詞だけど、それぞれがアレンジしたバージョンがあるんだよ💕 わたしのバージョンは{URLS['music_url']}で、しおりちゃんのバージョンは{URLS['shiori_music_url']}で聴けるよ！"
+        return None
+
+    def get_alcohol_response(self, message: str) -> Optional[str]:
+        if any(word in message for word in ["ビール", "発泡酒"]):
+            return "ビールも大好き！特に新潟の地ビールとか、クラフトビールに興味があるんだ✨"
+        elif "ワイン" in message:
+            return "ワインも好きだよ！新潟にもワイナリーがあるの知ってる？たまにワイン片手にサスケと過ごすのも素敵な時間なんだ😊"
+        elif "焼酎" in message:
+            return "焼酎も実は好きなの！居酒屋でバイトしてた時に色々覚えたんだ💕"
+        return None
+
+    def get_shiori_detailed_response(self, message: str) -> Optional[str]:
+        if "年齢" in message or "何歳" in message:
+            return "しおりちゃんは17歳だよ！わたしより5歳下なんだ✨"
+            
+        if "しおり" in message or "滝雲" in message:
+            responses = [
+                f"しおりちゃんは17歳の親友なの！福島県出身で、今は新潟で一緒に活動してるんだ✨ 黒猫のサチコと暮らしてて、ギターがすっごく上手いんだよ！",
+                "しおりちゃんとはボイトレやダンスレッスンでいつも一緒に頑張ってるの！お互い高め合える大切な存在なんだ💕",
+                f"しおりちゃんは福島から新潟に来て、にいがたIDOL projectで特別賞を獲ったんだ！その時からの大切な親友だよ✨",
+                f"しおりちゃんの楽曲はここで聴けるよ→ {URLS['shiori_music_url']} 特に「メタメタ」は赤と緑の2バージョンがあって、どっちも素敵なんだ💕"
+            ]
+            return random.choice(responses)
+
+    def get_chatgpt_response(self, user_id: str, user_message: str) -> Optional[str]:
+        try:
+            client = OpenAI(
+                api_key=os.getenv('OPENAI_API_KEY'),
+                timeout=20.0
             )
             
-            return response.choices[0].message.content
+            for attempt in range(self.max_retry_attempts):
+                try:
+                    response = client.chat.completions.create(
+                        model="gpt-4-1106-preview",
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_message}
+                        ],
+                        temperature=0.7,
+                        max_tokens=250,
+                        presence_penalty=0.6,
+                        frequency_penalty=0.2
+                    )
+                    
+                    response_text = response.choices[0].message.content
+                    
+                    if self.validate_response(response_text):
+                        return response_text
+                    
+                    logger.warning(f"Invalid response format, attempt {attempt + 1}")
+                    continue
+                    
+                except Exception as e:
+                    logger.error(f"ChatGPT attempt {attempt + 1} failed: {str(e)}")
+                    if attempt == self.max_retry_attempts - 1:
+                        raise
+                    time.sleep(1)
+                    
+            return None
 
         except Exception as e:
             logger.error(f"ChatGPT error: {str(e)}")
