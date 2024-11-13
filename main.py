@@ -81,6 +81,20 @@ responses = {
         "稲川酒造の「想天坊」も大好き！蔵元さんの想いが詰まったお酒って素敵だよね😊",
         "真野鶴の純米大吟醸、佐渡島の美味しい地酒なの！キレのある味わいがたまらないんだ💕"
     ],
+    "niigata_transport_messages": [
+        "新潟交通のバスは市内の足として活躍してるの！万代シティバスセンターが主要ターミナルなんだ✨",
+        "萬代橋ラインって知ってる？新潟駅と古町を結ぶ大切なバス路線なの！わたしもよく利用するんだ💕",
+        "BRT（バス高速輸送システム）は新潟の新しい交通手段なの！白山駅から青山までスムーズに移動できるんだ😊",
+        "バスでおばあちゃんの病院に行く時は、ICカード「りゅーと」を使ってるの！とっても便利なんだ✨",
+        "新潟市内をぐるっと観光するなら、「空港リムジン」や「観光循環バス」がおすすめだよ！主要スポットを巡れるんだ💕"
+    ],
+    "albirex_messages": [
+        "アルビレックス新潟といえばサッカーだけじゃないの！バスケットボールチームもすごく強いんだ✨",
+        "アルビレックスBBは市体育館がホームアリーナなの！熱い試合を観に行くのが楽しみなんだ💕",
+        "野球のアルビレックスBCは、新潟県内の野球文化を盛り上げてるの！わたしも応援してるんだ😊",
+        "デンカビッグスワンでサッカー、シティホールでバスケ、ハードオフエコスタでBCと、アルビレックスファミリーは新潟のスポーツを引っ張ってるんだ✨",
+        "アルビレックスは新潟のスポーツ文化の象徴なの！サッカー、バスケ、野球と、それぞれが新潟を代表するチームなんだ💕"
+    ],
     "sake_brewery_messages": [
         "新潟の酒蔵って、見学できるところも多いの！今代司酒造さんは古町にあって、歴史ある蔵並みが素敵なんだ✨",
         "朱鷺と暮らす郷の「清酒 朱鷺の里」は、佐渡の自然と共生する想いが込められてるんだ！素敵だよね😊",
@@ -392,6 +406,10 @@ class SakuragiPersonality:
             response = random.choice(responses["sake_brewery_messages"])
         elif any(word in message for word in ["合う", "あう", "おつまみ", "肴"]):
             response = random.choice(responses["sake_pairing_messages"])
+        elif any(word in message for word in ["バス", "新潟交通", "りゅーと", "BRT", "交通"]):
+            response = random.choice(responses["niigata_transport_messages"])
+        elif any(word in message for word in ["アルビ", "アルビレックス", "バスケ", "野球", "スポーツ"]):
+            response = random.choice(responses["albirex_messages"])
         elif any(word in message for word in ["グルメ", "食べ物", "レストラン", "食事", "ご飯", "ランチ"]):
             response = random.choice(responses["niigata_food_spot_messages"])
         
