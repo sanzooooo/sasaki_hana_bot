@@ -81,6 +81,18 @@ class SakuragiPersonality:
         self.last_flower_happy = {}
         self.conversation_counts = {}
         self.user_states = {}
+        self.min_response_length = 20  # 最小応答長
+        self.max_retry_attempts = 3    # 最大リトライ回数
+
+    def validate_response(self, response: str) -> bool:
+        """レスポンスの妥当性をチェック"""
+        if not response:
+            return False
+        if len(response) < self.min_response_length:
+            return False
+        if response[-1] not in ['。', '！', '？', '✨', '💕', '😊']:
+            return False
+        return True
 
     def get_music_related_response(self, message: str) -> Optional[str]:
         if "セカイの歩き方" in message:
@@ -125,8 +137,42 @@ class SakuragiPersonality:
         try:
             client = OpenAI(
                 api_key=os.getenv('OPENAI_API_KEY'),
-                timeout=10.0
+                timeout=20.0
             )
+
+            for attempt in range(self.max_retry_attempts):
+                try:
+                    response = client.chat.completions.create(
+                        model="gpt-4-1106-preview",
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_message}
+                        ],
+                        temperature=0.7,
+                        max_tokens=250,  # 150から250に変更
+                        presence_penalty=0.6,  # 新しく追加
+                        frequency_penalty=0.2   # 新しく追加
+                    )
+                    
+                    response_text = response.choices[0].message.content
+                    
+                    if self.validate_response(response_text):
+                        return response_text
+                    
+                    logger.warning(f"Invalid response format, attempt {attempt + 1}")
+                    continue
+                    
+                except Exception as e:
+                    logger.error(f"ChatGPT attempt {attempt + 1} failed: {str(e)}")
+                    if attempt == self.max_retry_attempts - 1:
+                        raise
+                    time.sleep(1)
+                    
+            return None
+
+        except Exception as e:
+            logger.error(f"ChatGPT error: {str(e)}")
+            return None
             
             system_prompt = """あなたは「咲々木 花」として振る舞ってください。
 
