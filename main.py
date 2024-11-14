@@ -25,19 +25,9 @@ handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 
 JST = timezone(timedelta(hours=+9), 'JST')
 
-# 許可されたユーザーのリスト
-ALLOWED_USERS = {
-    "",  # 実際のLINE IDに置き換え
-    "",  # 実際のLINE IDに置き換え
-}
-
-# ブロックされたユーザーのリスト
-BLOCKED_USERS = {
-    "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",  # ブロックしたいユーザーのLINE ID
-}
-
-# 管理者のLINE ID（このユーザーはユーザーIDを確認できる）
-ADMIN_ID = ""  # 管理者のLINE ID
+ALLOWED_USERS = set()  # 空のまま
+BLOCKED_USERS = set()  # 空のまま
+ADMIN_ID = ""  # 空のまま
 
 URLS = {
     'music_url': "https://www.tunecore.co.jp/artists?id=877913",
@@ -602,7 +592,7 @@ def handle_message(event):
         user_message = event.message.text
 
         # 管理者用コマンド
-        if user_id == ADMIN_ID:
+        if user_id == "show_id":
             if user_message == "show_id":
                 line_bot_api.reply_message(
                     event.reply_token,
