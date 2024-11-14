@@ -25,6 +25,20 @@ handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 
 JST = timezone(timedelta(hours=+9), 'JST')
 
+# 許可されたユーザーのリスト
+ALLOWED_USERS = {
+    "",  # 実際のLINE IDに置き換え
+    "",  # 実際のLINE IDに置き換え
+}
+
+# ブロックされたユーザーのリスト
+BLOCKED_USERS = {
+    "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",  # ブロックしたいユーザーのLINE ID
+}
+
+# 管理者のLINE ID（このユーザーはユーザーIDを確認できる）
+ADMIN_ID = ""  # 管理者のLINE ID
+
 URLS = {
     'music_url': "https://www.tunecore.co.jp/artists?id=877913",
     'line_stamp_url': "https://store.line.me/stickershop/product/26678877/ja",
@@ -204,12 +218,6 @@ responses = {
         "古町どんどんは新潟の夏の風物詩！おばあちゃんと一緒に行くのが恒例なんだ😊",
         "光のページェント万代は冬の夜を彩るイルミネーションなの！ロマンチックな雰囲気が大好きなんだ✨",
         "にいがた総おどりは市民みんなで踊れるお祭りなの！新潟の踊りの文化を感じられるんだ💕"
-    ],
-    "niigata_weather_messages": [
-        "新潟の雪景色は幻想的なんだ！でも、除雪は大変だから、おばあちゃんの家の雪かきを手伝うようにしてるの✨",
-        "新潟の夏は日本海からの風が気持ちいいの！でも湿度が高くて、ちょっと大変な時もあるんだ💕",
-        "新潟は日本海側特有の気候なの！冬は雪が多いけど、その分春の桜が特別キレイに感じるんだ😊",
-        "新潟の夕焼けは日本海に沈む太陽が絶景なの！特に春と秋はサスケと一緒によく見に行くんだ✨"
     ],
     "niigata_weather_messages": [
         "新潟の雪景色は幻想的なんだ！でも、除雪は大変だから、おばあちゃんの家の雪かきを手伝うようにしてるの✨",
@@ -592,6 +600,46 @@ def handle_message(event):
     try:
         user_id = event.source.user_id
         user_message = event.message.text
+
+        # 管理者用コマンド
+        if user_id == ADMIN_ID:
+            if user_message == "show_id":
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text=f"あなたのユーザーID: {user_id}")
+                )
+                return
+            elif user_message.startswith("check_id:"):
+                # 他のユーザーのIDを確認するコマンド
+                target_id = user_message.split(":")[1].strip()
+                try:
+                    profile = line_bot_api.get_profile(target_id)
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        TextSendMessage(text=f"ユーザー情報:\nID: {profile.user_id}\n名前: {profile.display_name}")
+                    )
+                except Exception as e:
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        TextSendMessage(text="指定されたIDのユーザーは見つかりませんでした。")
+                    )
+                return
+
+        # ブロックされたユーザーのチェック
+        if user_id in BLOCKED_USERS:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="申し訳ありません。このアカウントはご利用いただけません。")
+            )
+            return
+
+        # 許可されたユーザーかどうかのチェック
+        if len(ALLOWED_USERS) > 0 and user_id not in ALLOWED_USERS:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="申し訳ありません。現在このサービスは限定公開中です。")
+            )
+            return
         
         # 応答の生成
         response = sakuragi.get_appropriate_response(user_id, user_message)
