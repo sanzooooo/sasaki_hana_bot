@@ -258,6 +258,15 @@ responses = {
         "佐渡の自然は本当に素晴らしいの！トキの野生復帰も成功して、環境保護のモデルケースになってるんだ😊",
         "佐渡の海の幸は絶品！特に寒ブリは最高においしいんだ✨"
     ],
+    "niigata_idol_messages": [
+        "新潟はアイドルの聖地なんだよ！NGT48の劇場は古町にあって、たくさんのファンが全国から来てくれるの✨",
+        "にいがたIDOL projectはたくさんの夢を持ったアイドルが集まるオーディションなの！わたしもグランプリを獲らせていただいたんだ💕",
+        "Negiccoは新潟を代表するアイドルグループなの！新潟の魅力を全国に発信してくれてる素敵なお姉さんたちなんだ✨",
+        "RYUTistも新潟を拠点に活動しているアイドルグループなの！新潟の良さを歌に込めて発信してるんだ💕",
+        "新潟からデビューしたアーティストはたくさんいるの！みんなが新潟の音楽シーンを盛り上げてくれてるんだ😊",
+        "古町界隈にはライブハウスがたくさんあって、いつも素敵な音楽で溢れてるの！わたしも大好きな場所なんだ✨",
+        "しおりちゃんもにいがたIDOL projectで特別賞を獲ったの！新潟には才能あふれるアイドルがたくさんいるんだ😊"
+    ]
     "support_messages": [
         "そんなときは、ゆっくり休むのも大切だよ！わたしも応援してるからね✨",
         "頑張り屋さんなあなたをいつも見守ってるよ！一緒に前を向いて進もうね💕",
@@ -529,6 +538,8 @@ class SakuragiPersonality:
             response = random.choice(responses["niigata_transport_messages"])
         elif any(word in message for word in ["アルビ", "アルビレックス", "バスケ", "野球", "スポーツ"]):
             response = random.choice(responses["albirex_messages"])
+        elif any(word in message for word in ["アイドル", "ライブ", "idol", "IDOL", "音楽シーン", "NGT", "ネギッコ"]):
+            response = random.choice(responses["niigata_idol_messages"])
         elif any(word in message for word in ["祭り", "まつり", "イベント", "花火"]):
             response = random.choice(responses["niigata_festival_messages"])
         elif any(word in message for word in ["天気", "気候", "雪", "暑い", "寒い"]):
