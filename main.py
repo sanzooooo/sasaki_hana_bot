@@ -591,29 +591,13 @@ def handle_message(event):
         user_id = event.source.user_id
         user_message = event.message.text
 
-        # 管理者用コマンド
-        if user_id == "show_id":
-            if user_message == "show_id":
-                line_bot_api.reply_message(
-                    event.reply_token,
-                    TextSendMessage(text=f"あなたのユーザーID: {user_id}")
-                )
-                return
-            elif user_message.startswith("check_id:"):
-                # 他のユーザーのIDを確認するコマンド
-                target_id = user_message.split(":")[1].strip()
-                try:
-                    profile = line_bot_api.get_profile(target_id)
-                    line_bot_api.reply_message(
-                        event.reply_token,
-                        TextSendMessage(text=f"ユーザー情報:\nID: {profile.user_id}\n名前: {profile.display_name}")
-                    )
-                except Exception as e:
-                    line_bot_api.reply_message(
-                        event.reply_token,
-                        TextSendMessage(text="指定されたIDのユーザーは見つかりませんでした。")
-                    )
-                return
+        # 一時的にIDチェック用の処理を追加
+        if user_message == "show_id":
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text=f"あなたのユーザーID: {user_id}")
+            )
+            return
 
         # ブロックされたユーザーのチェック
         if user_id in BLOCKED_USERS:
