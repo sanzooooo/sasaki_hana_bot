@@ -596,13 +596,37 @@ def handle_message(event):
         user_id = event.source.user_id
         user_message = event.message.text
 
-        # 一時的にIDチェック用の処理を追加
-        if user_message == "show_id":
+        # 誰でもIDを確認できる特別コマンド
+        if user_message == "myid":
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(text=f"あなたのユーザーID: {user_id}")
             )
             return
+
+        # 管理者用コマンド
+        if user_id == ADMIN_ID:
+            if user_message == "show_id":
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text=f"あなたのユーザーID: {user_id}")
+                )
+                return
+            elif user_message.startswith("check_id:"):
+                # 他のユーザーのIDを確認するコマンド
+                target_id = user_message.split(":")[1].strip()
+                try:
+                    profile = line_bot_api.get_profile(target_id)
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        TextSendMessage(text=f"ユーザー情報:\nID: {profile.user_id}\n名前: {profile.display_name}")
+                    )
+                except Exception as e:
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        TextSendMessage(text="指定されたIDのユーザーは見つかりませんでした。")
+                    )
+                return
 
         # ブロックされたユーザーのチェック
         if user_id in BLOCKED_USERS:
@@ -611,15 +635,14 @@ def handle_message(event):
                 TextSendMessage(text="申し訳ありません。このアカウントはご利用いただけません。")
             )
             return
-
-        # 許可されたユーザーかどうかのチェック
+            
         if len(ALLOWED_USERS) > 0 and user_id not in ALLOWED_USERS:
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(text="申し訳ありません。現在このサービスは限定公開中です。")
+                TextSendMessage(text="サービスを利用するには、まず 'myid' と送信してIDを確認し、X（旧Twitter）のDMにてIDを伝えてください✨")
             )
             return
-        
+            
         # 応答の生成
         response = sakuragi.get_appropriate_response(user_id, user_message)
         
