@@ -25,11 +25,14 @@ handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 
 JST = timezone(timedelta(hours=+9), 'JST')
 
-ALLOWED_USERS = "U0cf263ba9e075fcac42d60e20bd950c3" 
-BLOCKED_USERS = set()  # 空のまま
-ADMIN_ID ={
+# 設定
+ADMIN_ID = "U0cf263ba9e075fcac42d60e20bd950c3"  # 管理者のID（文字列）
+
+ALLOWED_USERS = {
     "U0cf263ba9e075fcac42d60e20bd950c3",  # 管理者のID
-}
+}  # 集合（set）として定義
+
+BLOCKED_USERS = set()  # 空の集合
 
 URLS = {
     'music_url': "https://www.tunecore.co.jp/artists?id=877913",
