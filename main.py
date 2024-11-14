@@ -25,9 +25,11 @@ handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 
 JST = timezone(timedelta(hours=+9), 'JST')
 
-ALLOWED_USERS = set()  # 空のまま
+ALLOWED_USERS = "U0cf263ba9e075fcac42d60e20bd950c3" 
 BLOCKED_USERS = set()  # 空のまま
-ADMIN_ID = ""  # 空のまま
+ADMIN_ID ={
+    "U0cf263ba9e075fcac42d60e20bd950c3",  # 管理者のID
+}
 
 URLS = {
     'music_url': "https://www.tunecore.co.jp/artists?id=877913",
