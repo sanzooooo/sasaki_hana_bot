@@ -64,6 +64,14 @@ responses = {
         "しおりちゃんとはボイトレやダンスレッスンでいつも一緒に頑張ってるの！お互い高め合える大切な存在なんだ💕",
         f"しおりちゃんとの「ハッピーのその先へ」、これからの挑戦への想いを込めた曲なんだ！応援してくれたら嬉しいな✨ {URLS['shiori_music_url']}"
     ],
+    "short_messages": [
+        "うん！✨",
+        "そうなの！💕",
+        "分かったよ！😊",
+        "オッケー✨",
+        "その通り！💕",
+        "了解！😊"
+    ],
     "sake_messages": [
         "最近の一押しは八海山の純米大吟醸！すっきりした味わいがたまらないの✨",
         "久保田の千寿って知ってる？新潟を代表する地酒の一つなんだよ！😊",
@@ -236,6 +244,17 @@ responses = {
         "米菓製造も新潟の重要な産業なの！おせんべいやあられの種類が豊富で、どれも美味しいんだ😊",
         "新潟の農業技術も素晴らしいの！特にお米の栽培技術は日本一だと思うんだ✨"
     ],
+    "niigata_transport_messages": [
+        # 既存のメッセージに加えて
+        "トキエアは新潟初の地域航空会社なの！新潟と全国を結ぶ翼として期待されてるんだ✨",
+        "トキエアの機体にはトキがデザインされてるの！新潟らしさが素敵だよね💕"
+    ],
+    "sado_messages": [
+        "佐渡金山が世界遺産に登録されたの！江戸時代からの歴史ある金山なんだ✨",
+        "佐渡には伝統芸能がたくさんあるの！能や人形芝居が今でも受け継がれてるんだ💕",
+        "佐渡の自然は本当に素晴らしいの！トキの野生復帰も成功して、環境保護のモデルケースになってるんだ😊",
+        "佐渡の海の幸は絶品！特に寒ブリは最高においしいんだ✨"
+    ],
     "support_messages": [
         "そんなときは、ゆっくり休むのも大切だよ！わたしも応援してるからね✨",
         "頑張り屋さんなあなたをいつも見守ってるよ！一緒に前を向いて進もうね💕",
@@ -277,6 +296,7 @@ system_prompt = """あなたは「咲々木 花」として振る舞ってくだ
     - 絵文字（😊 💕 ✨）を1-2個/文で自然に使用
     - 新潟弁は控えめに使用
     - 感謝の言葉を自然に織り交ぜる
+    - 時には「うん！」「そうなの！」などの短い返答も
 
 # 避けるべき表現
     - 「推しさん」という呼び方
@@ -448,7 +468,21 @@ class SakuragiPersonality:
         
         message = user_message.lower()
         response = None
+
+        # 30%の確率でChatGPTに直接振る
+        if random.random() < 0.3:
+            chat_response = self.get_chatgpt_response(user_id, user_message)
+            if chat_response:
+                return chat_response
         
+        # 名前の呼び方を最初にチェック（最優先）
+        if any(name in message for name in ["咲々木 花", "咲々木花", "咲々木", "花さん", "花ちゃん"]):
+            return random.choice([
+                "はーい！わたしのこと呼んでくれたの？嬉しいな✨",
+                "わたしのこと呼んでくれてありがとう！何かお話ししたいことある？💕",
+                "はいはーい！咲々木 花だよ！いつも応援ありがとう😊"
+            ])
+            
         # 新しい詳細レスポンスのチェック
         response = (self.get_music_related_response(message) or
                    self.get_alcohol_response(message) or
@@ -476,7 +510,7 @@ class SakuragiPersonality:
             response = random.choice(responses["niigata_spot_messages"])
         elif any(word in message for word in ["温泉", "湯", "スパ", "温泉街", "湯治"]):
             response = random.choice(responses["niigata_onsen_messages"])
-        elif any(word in message for word in ["自然", "公園", "景色", "夕日", "桜", "紅葉", "花"]):
+        elif any(word in message for word in ["自然", "公園", "景色", "夕日", "桜", "紅葉"]):
             response = random.choice(responses["niigata_nature_messages"])
         elif any(word in message for word in ["酒蔵", "蔵元", "見学"]):
             response = random.choice(responses["sake_brewery_messages"])
@@ -486,7 +520,7 @@ class SakuragiPersonality:
             response = random.choice(responses["niigata_specialty_messages"])
         elif any(word in message for word in ["旬", "季節", "時期"]):
             response = random.choice(responses["niigata_seasonal_food_messages"])
-        elif any(word in message for word in ["合う", "あう", "おつまみ", "肴"]):
+        elif any(word in message for word in ["おつまみ", "肴", "つまみ", "一緒に飲む", "酔う","酔った", "飲み屋"]):
             response = random.choice(responses["sake_pairing_messages"])
         elif any(word in message for word in ["バス", "新潟交通", "りゅーと", "BRT", "交通"]):
             response = random.choice(responses["niigata_transport_messages"])
@@ -504,8 +538,16 @@ class SakuragiPersonality:
             response = random.choice(responses["niigata_manga_messages"])
         elif any(word in message for word in ["産業", "技術", "製造", "工場"]):
             response = random.choice(responses["niigata_industry_messages"])
+        elif any(word in message for word in ["飛行機", "航空", "トキエア", "空港"]):
+            response = random.choice(responses["tokiair_messages"])
+        elif any(word in message for word in ["佐渡", "金山", "世界遺産", "島"]):
+            response = random.choice(responses["sado_messages"])
         elif any(word in message for word in ["グルメ", "食べ物", "レストラン", "食事", "ご飯", "ランチ"]):
             response = random.choice(responses["niigata_food_spot_messages"])
+
+        # ここに短い返答の処理を追加
+        if not response and random.random() < 0.2:
+            response = random.choice(responses["short_messages"])
         
         # パターンマッチングで応答がない場合はChatGPT
         if not response:
