@@ -26,7 +26,10 @@ handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 JST = timezone(timedelta(hours=+9), 'JST')
 
 # 設定
-ADMIN_ID = "U0cf263ba9e075fcac42d60e20bd950c3"  # 管理者のID（文字列）
+ADMIN_ID = [
+    "U0cf263ba9e075fcac42d60e20bd950c3",
+    "U843f1d83e5290eb9d12214439d8b0c31"
+]
 
 ALLOWED_USERS = {
     "U0cf263ba9e075fcac42d60e20bd950c3",  # 管理者のID
