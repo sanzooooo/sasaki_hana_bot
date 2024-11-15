@@ -28,12 +28,12 @@ JST = timezone(timedelta(hours=+9), 'JST')
 # 設定
 ADMIN_ID = [
     "U0cf263ba9e075fcac42d60e20bd950c3",
-    "U843f1d83e5290eb9d12214439d8b0c31"
 ]
 
-ALLOWED_USERS = {
-    "U0cf263ba9e075fcac42d60e20bd950c3",  # 管理者のID
-}  # 集合（set）として定義
+ALLOWED_USERS = [
+    "U0cf263ba9e075fcac42d60e20bd950c3",
+    "U843f1d83e5290eb9d12214439d8b0c31"
+]
 
 BLOCKED_USERS = set()  # 空の集合
 
