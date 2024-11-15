@@ -33,7 +33,7 @@ ADMIN_ID = [
 ALLOWED_USERS = [
     "U0cf263ba9e075fcac42d60e20bd950c3",
     "U843f1d83e5290eb9d12214439d8b0c31",
-    "U1cce76e67021ec40b638d933fd7790da
+    "U1cce76e67021ec40b638d933fd7790da"
 ]
 
 BLOCKED_USERS = set()  # 空の集合
