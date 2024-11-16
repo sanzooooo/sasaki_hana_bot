@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import random
 from openai import OpenAI
 import time
+from google.cloud import storage
 from typing import Optional, Dict
 from datetime import datetime, timezone, timedelta
 import logging
@@ -51,7 +52,7 @@ URLS = {
     'shiori_goods_url': "https://suzuri.jp/sasuke_wanko"
 }
 
-IMAGE_BASE_URL = "https://storage.googleapis.com/sasaki-images-bot"  # あなたのバケットURLに変更してください
+BUCKET_NAME = "sasaki-images-bot"
 
 responses = {
     "morning_messages": [
@@ -365,26 +366,38 @@ class SakuragiPersonality:
         self.max_retry_attempts = 3
 
     def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
-        """メッセージに応じた画像メッセージを返す"""
-        current_hour = datetime.now(JST).hour
+    """メッセージに応じた画像メッセージを返す"""
+    current_hour = datetime.now(JST).hour
+    
+    # おはよう、お疲れ系のメッセージかチェック
+    if not any(word in message for word in ["おはよう", "お疲れ", "おつかれ"]):
+        return None
         
-        # おはよう、お疲れ系のメッセージかチェック
-        if not any(word in message for word in ["おはよう", "お疲れ", "おつかれ"]):
-            return None
-            
-        # 時間帯で画像フォルダを選択
-        folder = "morning" if 5 <= current_hour < 17 else "evening"
-        
-        # ランダムに画像番号を選択（1-16）
-        image_number = random.randint(1, 16)
-        
-        # 画像のフルURL
-        image_url = f"{IMAGE_BASE_URL}/{folder}/{folder}{image_number}.jpg"
+    # 時間帯で画像フォルダを選択
+    folder = "morning" if 5 <= current_hour < 17 else "evening"
+    
+    # ランダムに画像番号を選択（1-16）
+    image_number = random.randint(1, 16)
+    
+    # Blobの取得と署名付きURLの生成
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(BUCKET_NAME)
+    blob = bucket.blob(f"{folder}/{folder}{image_number}.jpg")
+    
+    try:
+        image_url = blob.generate_signed_url(
+            version="v4",
+            expiration=timedelta(minutes=15),
+            method="GET"
+        )
         
         return ImageSendMessage(
             original_content_url=image_url,
             preview_image_url=image_url
         )
+    except Exception as e:
+        logger.error(f"Error generating signed URL: {str(e)}")
+        return None
 
     def get_text_response(self, user_id: str, user_message: str) -> str:
         """テキストレスポンスを生成する"""
