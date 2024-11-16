@@ -360,8 +360,8 @@ class SakuragiPersonality:
         self.max_retry_attempts = 3
 
     def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
-        """メッセージに応じた画像メッセージを返す"""
-        return None  # 一時的に画像機能を無効化
+    """メッセージに応じた画像メッセージを返す"""
+    return None
     
     # おはよう、お疲れ系のメッセージかチェック
     if not any(word in message for word in ["おはよう", "お疲れ", "おつかれ"]):
