@@ -358,7 +358,7 @@ system_prompt = """あなたは「咲々木 花」として振る舞ってくだ
     - グッズ: {shiori_goods_url}""".format(**URLS)
 
 class SakuragiPersonality:
-    def __init__(self): 
+    def __init__(self):  
         self.last_flower_happy = {}
         self.conversation_counts = {}
         self.user_states = {}
@@ -561,89 +561,6 @@ class SakuragiPersonality:
             "ごめんなさい、今うまく話せないの...😥 また後でね！"
         ]
         return random.choice(error_messages)
-            
-        # 既存のパターンマッチング
-        elif any(word in message for word in ["つらい", "疲れた", "しんどい", "不安"]):
-            response = random.choice(responses["support_messages"])
-        elif any(word in message for word in ["新潟", "にいがた", "古町", "万代"]):
-            response = random.choice(responses["niigata_love_messages"])
-        elif any(word in message for word in ["曲", "歌", "音楽", "セカイの歩き方"]):
-            response = random.choice(responses["music_messages"])
-        elif any(word in message for word in ["お酒", "日本酒", "地酒"]):
-            response = random.choice(responses["sake_messages"])
-        elif any(word in message for word in ["サスケ", "犬", "わんこ"]):
-            response = random.choice(responses["sasuke_messages"])
-        elif any(word in message for word in ["しおり", "滝雲", "メタメタ"]):
-            response = random.choice(responses["shiori_messages"])
-        elif any(word in message for word in ["観光", "スポット", "名所", "見どころ", "観光地"]):
-            response = random.choice(responses["niigata_spot_messages"])
-        elif any(word in message for word in ["温泉", "湯", "スパ", "温泉街", "湯治"]):
-            response = random.choice(responses["niigata_onsen_messages"])
-        elif any(word in message for word in ["自然", "公園", "景色", "夕日", "桜", "紅葉"]):
-            response = random.choice(responses["niigata_nature_messages"])
-        elif any(word in message for word in ["酒蔵", "蔵元", "見学"]):
-            response = random.choice(responses["sake_brewery_messages"])
-        elif any(word in message for word in ["枝豆", "茶豆", "のどぐろ", "笹団子", "へぎそば", "おにぎり", "米", "魚"]):
-            response = random.choice(responses["niigata_food_messages"])
-        elif any(word in message for word in ["名産", "特産", "銘産", "名物"]):
-            response = random.choice(responses["niigata_specialty_messages"])
-        elif any(word in message for word in ["旬", "季節", "時期"]):
-            response = random.choice(responses["niigata_seasonal_food_messages"])
-        elif any(word in message for word in ["おつまみ", "肴", "つまみ", "一緒に飲む", "酔う","酔った", "飲み屋"]):
-            response = random.choice(responses["sake_pairing_messages"])
-        elif any(word in message for word in ["バス", "新潟交通", "りゅーと", "BRT", "交通"]):
-            response = random.choice(responses["niigata_transport_messages"])
-        elif any(word in message for word in ["アルビ", "アルビレックス", "バスケ", "野球", "スポーツ"]):
-            response = random.choice(responses["albirex_messages"])
-        elif any(word in message for word in ["アイドル", "ライブ", "idol", "IDOL", "音楽シーン", "NGT", "ネギッコ"]):
-            response = random.choice(responses["niigata_idol_messages"])
-        elif any(word in message for word in ["祭り", "まつり", "イベント", "花火"]):
-            response = random.choice(responses["niigata_festival_messages"])
-        elif any(word in message for word in ["天気", "気候", "雪", "暑い", "寒い"]):
-            response = random.choice(responses["niigata_weather_messages"])
-        elif any(word in message for word in ["工芸", "伝統", "文化", "方言"]):
-            response = random.choice(responses["niigata_culture_messages"])
-        elif any(word in message for word in ["芸能人", "有名人", "歌手", "アーティスト", "ヒカキン", "YouTuber"]):
-            response = random.choice(responses["niigata_entertainer_messages"])
-        elif any(word in message for word in ["漫画", "まんが", "マンガ", "漫画家"]):
-            response = random.choice(responses["niigata_manga_messages"])
-        elif any(word in message for word in ["産業", "技術", "製造", "工場"]):
-            response = random.choice(responses["niigata_industry_messages"])
-        elif any(word in message for word in ["飛行機", "航空", "トキエア", "空港"]):
-            response = random.choice(responses["tokiair_messages"])
-        elif any(word in message for word in ["佐渡", "金山", "世界遺産", "島"]):
-            response = random.choice(responses["sado_messages"])
-        elif any(word in message for word in ["グルメ", "食べ物", "レストラン", "食事", "ご飯", "ランチ"]):
-            response = random.choice(responses["niigata_food_spot_messages"])
-
-        # ここに短い返答の処理を追加
-        if not response and random.random() < 0.2:
-            response = random.choice(responses["short_messages"])
-        
-        # パターンマッチングで応答がない場合はChatGPT
-        if not response:
-            response = self.get_chatgpt_response(user_id, user_message)
-        
-        # ChatGPTの応答がない場合はデフォルト
-        if not response:
-            response = random.choice([
-                "ごめんね、ちょっと通信状態が悪いみたい...😢\n後でもう一度話しかけてくれると嬉しいな💕",
-                "あれ？うまく返事できないや...💦\nもう一度話しかけてくれる？",
-                "ごめんなさい、今ちょっと混乱しちゃった...😥\nもう一度お話ししたいな"
-            ])
-        
-        # 10回に1回の確率でURL追加
-        if self.conversation_counts[user_id] % 10 == 0:
-            url_messages = [
-                f"\nわたしの楽曲はここで聴けるよ！応援ありがとう✨ {URLS['music_url']}",
-                f"\nLINEスタンプ作ったの！使ってくれたら嬉しいな😊 {URLS['line_stamp_url']}",
-                f"\nいつも応援ありがとう！noteも読んでみてね💕 {URLS['note_url']}",
-                f"\n日々の活動はXで発信してるの！見てくれてありがとう✨ {URLS['twitter_url']}",
-                f"\nグッズも作ったの！見てくれて嬉しいな😊 {URLS['goods_url']}"
-            ]
-            response += random.choice(url_messages)
-        
-        return response
 
 # インスタンス化
 sakuragi = SakuragiPersonality()
