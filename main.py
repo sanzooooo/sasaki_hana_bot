@@ -358,7 +358,7 @@ system_prompt = """あなたは「咲々木 花」として振る舞ってくだ
     - グッズ: {shiori_goods_url}""".format(**URLS)
 
 class SakuragiPersonality:
-    def __init__(self):
+    def __init__(self): 
         self.last_flower_happy = {}
         self.conversation_counts = {}
         self.user_states = {}
@@ -563,8 +563,6 @@ class SakuragiPersonality:
         return random.choice(error_messages)
             
         # 既存のパターンマッチング
-        if "おはよう" in message:
-            response = random.choice(responses["morning_messages"])
         elif any(word in message for word in ["つらい", "疲れた", "しんどい", "不安"]):
             response = random.choice(responses["support_messages"])
         elif any(word in message for word in ["新潟", "にいがた", "古町", "万代"]):
