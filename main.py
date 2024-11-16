@@ -359,10 +359,9 @@ class SakuragiPersonality:
         self.min_response_length = 20
         self.max_retry_attempts = 3
 
-    # get_image_messageメソッドを画像対応版に修正
-def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
-    """メッセージに応じた画像メッセージを返す"""
-    current_hour = datetime.now(JST).hour
+    def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
+        """メッセージに応じた画像メッセージを返す"""
+        return None  # 一時的に画像機能を無効化
     
     # おはよう、お疲れ系のメッセージかチェック
     if not any(word in message for word in ["おはよう", "お疲れ", "おつかれ"]):
@@ -450,6 +449,9 @@ def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
     def get_appropriate_response(self, user_id: str, user_message: str) -> list:
         """統合されたレスポンス生成メソッド"""
         messages = []
+        text_response = self.get_text_response(user_id, user_message)
+        messages.append(TextSendMessage(text=text_response))
+        return messages
         
         # テキストメッセージを生成
         text_response = self.get_text_response(user_id, user_message)
