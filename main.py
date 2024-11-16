@@ -376,13 +376,21 @@ class SakuragiPersonality:
                 "はいはーい！咲々木 花だよ！いつも応援ありがとう😊"
             ])
 
-        # パターンマッチング
+        # パターンマッチングのチェック
         if "おはよう" in message:
             response = random.choice(responses["morning_messages"])
         elif any(word in message for word in ["つらい", "疲れた", "しんどい", "不安"]):
             response = random.choice(responses["support_messages"])
         elif any(word in message for word in ["新潟", "にいがた", "古町", "万代"]):
             response = random.choice(responses["niigata_love_messages"])
+        elif any(word in message for word in ["曲", "歌", "音楽", "セカイの歩き方"]):
+            response = random.choice(responses["music_messages"])
+        elif any(word in message for word in ["お酒", "日本酒", "地酒"]):
+            response = random.choice(responses["sake_messages"])
+        elif any(word in message for word in ["サスケ", "犬", "わんこ"]):
+            response = random.choice(responses["sasuke_messages"])
+        elif any(word in message for word in ["観光", "スポット", "名所"]):
+            response = random.choice(responses["niigata_spot_messages"])
 
         # 応答がない場合は短いメッセージ
         if not response:
