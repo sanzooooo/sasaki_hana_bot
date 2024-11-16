@@ -572,12 +572,16 @@ def handle_message(event):
         user_id = event.source.user_id
         user_message = event.message.text
 
+        # デバッグ用ログ追加
+        logger.info(f"Received message from {user_id}: {user_message}")
+
         # myidコマンドの処理
         if user_message == "myid":
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(text=f"あなたのユーザーID: {user_id}")
             )
+            logger.info("Sent myid response")
             return
 
         # ブロックユーザーチェック
@@ -586,6 +590,7 @@ def handle_message(event):
                 event.reply_token,
                 TextSendMessage(text="申し訳ありません。このアカウントはご利用いただけません。")
             )
+            logger.info("Blocked user attempted access")
             return
             
         # 許可ユーザーチェック
@@ -594,15 +599,19 @@ def handle_message(event):
                 event.reply_token,
                 TextSendMessage(text="サービスを利用するには、まず 'myid' と送信してIDを確認し、X（旧Twitter）のDMにてIDを伝えてください✨")
             )
+            logger.info("Unauthorized user attempted access")
             return
-            
-        # レスポンスの生成（テキストと画像）
-        messages = sakuragi.get_appropriate_response(user_id, user_message)
-        
-        # 返信（1回だけ）
-        line_bot_api.reply_message(event.reply_token, messages)
+
+        # テスト用に一時的に単純な応答に変更
+        text_response = sakuragi.get_text_response(user_id, user_message)
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text=text_response)
+        )
+        logger.info(f"Sent response: {text_response}")
 
     except Exception as e:
+        logger.error(f"Error in handle_message: {str(e)}", exc_info=True)
         error_response = sakuragi.handle_error(e)
         line_bot_api.reply_message(
             event.reply_token,
