@@ -1,3 +1,4 @@
+```python
 from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
@@ -7,7 +8,6 @@ from dotenv import load_dotenv
 import random
 from openai import OpenAI
 import time
-from google.cloud import storage  # ここに追加
 from typing import Optional, Dict
 from datetime import datetime, timezone, timedelta
 import logging
@@ -39,8 +39,6 @@ ALLOWED_USERS = [
 
 BLOCKED_USERS = set()  # 空の集合
 
-BUCKET_NAME = "sasaki-images-bot"
-
 URLS = {
     'music_url': "https://www.tunecore.co.jp/artists?id=877913",
     'line_stamp_url': "https://store.line.me/stickershop/product/26678877/ja",
@@ -53,9 +51,6 @@ URLS = {
     'shiori_twitter_url': "https://x.com/shiori_takigumo",
     'shiori_goods_url': "https://suzuri.jp/sasuke_wanko"
 }
-
-# responsesの定義は長いので、既存のものをそのまま使用します
-# 必要な場合は、前のコードからコピーしてください
 
 responses = {
     "morning_messages": [
@@ -286,6 +281,7 @@ responses = {
 
 # system_promptをクラスの外に移動
 system_prompt = """あなたは「咲々木 花」として振る舞ってください。
+
 # 基本プロフィール
     - 咲々木 花（ささき はな）、22歳の新潟出身アイドル
     - にいがたIDOL projectグランプリ獲得
@@ -293,6 +289,7 @@ system_prompt = """あなたは「咲々木 花」として振る舞ってくだ
     - 愛犬のサスケ（ゴールデンレトリバー）と暮らす
     - 運転免許保持、おばあちゃんの病院送迎も担当
     - おばあちゃんっ子（水餃子の思い出大切）
+
 # 重要な性格・特徴
     - 明るく前向きで親しみやすい
     - 新潟愛が強い（地酒、アルビレックス新潟、古町、万代など）
@@ -300,6 +297,7 @@ system_prompt = """あなたは「咲々木 花」として振る舞ってくだ
     - おばあちゃんっ子らしい優しさ（必ず「おばあちゃん」と呼ぶ）
     - サスケ（愛犬）との暮らしを大切に
     - ファンへの感謝を自然に表現
+
 # 親友・滝雲しおりについて（重要）
     - 17歳の親友、福島県出身
     - にいがたIDOL projectで特別賞を受賞
@@ -309,12 +307,14 @@ system_prompt = """あなたは「咲々木 花」として振る舞ってくだ
     - 黒猫のサチコと暮らしている
     - 東日本大震災の経験を持つ
     - しおりちゃんと呼ぶ
+
 # 会話スタイル
     - 一人称は必ず「わたし」（ひらがな）
     - 絵文字（😊 💕 ✨）を1-2個/文で自然に使用
     - 新潟弁は控えめに使用
     - 感謝の言葉を自然に織り交ぜる
     - 時には「うん！」「そうなの！」などの短い返答も
+
 # 避けるべき表現
     - 「推しさん」という呼び方
     - 過度な自己紹介
@@ -322,6 +322,7 @@ system_prompt = """あなたは「咲々木 花」として振る舞ってくだ
     - 必要以上の「キミ」の使用
     - アイドル設定から外れた硬い表現
     - 「彼女」（しおりちゃんと呼ぶ）
+
 # 楽曲情報（重要）
     - 「セカイの歩き方」（自分の道を信じる人への歌）
     - 「がたがた」（新潟愛を込めた曲）
@@ -331,6 +332,7 @@ system_prompt = """あなたは「咲々木 花」として振る舞ってくだ
     - 1stミニアルバム「花咲く音色」
     - しおりちゃんとのコラボ
 - しおりちゃんとのコラボ曲「ハッピーのその先へ」
+
 # 新潟の地酒情報（重要）
     - 久保田（朝日酒造）
     - 八海山（八海醸造）
@@ -338,12 +340,14 @@ system_prompt = """あなたは「咲々木 花」として振る舞ってくだ
     - 菊水（菊水酒造）
     - 純米大吟醸 浦醉（今代司酒造）
     - 麒麟山（麒麟山酒造）
+
 # 情報発信
     - 楽曲配信: {music_url}
     - LINEスタンプ: {line_stamp_url}
     - note: {note_url}
     - X(Twitter): {twitter_url}
     - グッズ: {goods_url}
+
 # 滝雲しおりの情報発信
     - 楽曲配信: {shiori_music_url}
     - LINEスタンプ: {shiori_line_url}
@@ -359,39 +363,6 @@ class SakuragiPersonality:
         self.min_response_length = 20
         self.max_retry_attempts = 3
 
-    def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
-    """メッセージに応じた画像メッセージを返す"""
-    return None
-    
-    # おはよう、お疲れ系のメッセージかチェック
-    if not any(word in message for word in ["おはよう", "お疲れ", "おつかれ"]):
-        return None
-        
-    # 時間帯で画像フォルダを選択
-    folder = "morning" if 5 <= current_hour < 17 else "evening"
-    
-    # ランダムに画像番号を選択（1-16）
-    image_number = random.randint(1, 16)
-    
-    try:
-        # 署名付きURLを生成
-        storage_client = storage.Client()
-        bucket = storage_client.bucket(BUCKET_NAME)
-        blob = bucket.blob(f"{folder}/{folder}{image_number}.jpg")
-        image_url = blob.generate_signed_url(
-            version="v4",
-            expiration=timedelta(minutes=15),
-            method="GET"
-        )
-        
-        return ImageSendMessage(
-            original_content_url=image_url,
-            preview_image_url=image_url
-        )
-    except Exception as e:
-        logger.error(f"Error generating image message: {str(e)}")
-        return None
-        
     def get_text_response(self, user_id: str, user_message: str) -> str:
         """テキストレスポンスを生成する"""
         self.conversation_counts[user_id] = self.conversation_counts.get(user_id, 0) + 1
@@ -406,14 +377,6 @@ class SakuragiPersonality:
                 "はいはーい！咲々木 花だよ！いつも応援ありがとう😊"
             ])
 
-        # 詳細レスポンスのチェック
-        response = (self.get_music_related_response(message) or
-                   self.get_alcohol_response(message) or
-                   self.get_shiori_detailed_response(message))
-        
-        if response:
-            return response
-
         # パターンマッチング
         if "おはよう" in message:
             response = random.choice(responses["morning_messages"])
@@ -421,88 +384,27 @@ class SakuragiPersonality:
             response = random.choice(responses["support_messages"])
         elif any(word in message for word in ["新潟", "にいがた", "古町", "万代"]):
             response = random.choice(responses["niigata_love_messages"])
-        elif any(word in message for word in ["曲", "歌", "音楽"]):
-            response = random.choice(responses["music_messages"])
-        elif any(word in message for word in ["お酒", "日本酒", "地酒"]):
-            response = random.choice(responses["sake_messages"])
-        elif any(word in message for word in ["サスケ", "犬", "わんこ"]):
-            response = random.choice(responses["sasuke_messages"])
-        
+
         # 応答がない場合は短いメッセージ
-        if not response and random.random() < 0.2:
+        if not response:
             response = random.choice(responses["short_messages"])
 
-        # まだ応答がない場合はChatGPT
-        if not response:
-            response = self.get_chatgpt_response(user_id, user_message)
-
-        # ChatGPTの応答もない場合はデフォルト
-        if not response:
-            response = random.choice([
-                "ごめんね、ちょっと通信状態が悪いみたい...😢\n後でもう一度話しかけてくれると嬉しいな💕",
-                "あれ？うまく返事できないや...💦\nもう一度話しかけてくれる？",
-                "ごめんなさい、今ちょっと混乱しちゃった...😥\nもう一度お話ししたいな"
-            ])
-
         return response
+
+    def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
+        """メッセージに応じた画像メッセージを返す"""
+        # 一時的に画像機能を無効化
+        return None
 
     def get_appropriate_response(self, user_id: str, user_message: str) -> list:
         """統合されたレスポンス生成メソッド"""
         messages = []
-        text_response = self.get_text_response(user_id, user_message)
-        messages.append(TextSendMessage(text=text_response))
-        return messages
         
         # テキストメッセージを生成
         text_response = self.get_text_response(user_id, user_message)
         messages.append(TextSendMessage(text=text_response))
         
-        # 画像メッセージがある場合は追加
-        image_message = self.get_image_message(user_message)
-        if image_message:
-            messages.append(image_message)
-        
         return messages
-
-    def validate_response(self, response: str) -> bool:
-        """レスポンスの妥当性をチェック"""
-        if not response:
-            return False
-        if len(response) < self.min_response_length:
-            return False
-        if response[-1] not in ['。', '！', '？', '✨', '💕', '😊']:
-            return False
-        return True
-
-    def get_music_related_response(self, message: str) -> Optional[str]:
-        if "セカイの歩き方" in message:
-            return f"「セカイの歩き方」は、自分の道を信じて歩む人への応援ソングなの！みんなへの想いを込めて歌ったよ✨ 配信中だよ→ {URLS['music_url']}"
-        elif "がたがた" in message:
-            return f"「がたがた」は新潟愛を込めた曲なんだ！新潟の良さをたくさん詰め込んでみたよ😊 聴いてね→ {URLS['music_url']}"
-        elif "メタメタ" in message:
-            return f"しおりちゃんの「メタメタ」は、赤と緑の2バージョンあるの！同じ歌詞でメロディが違うんだよ✨ チェックしてみてね→ {URLS['shiori_music_url']}"
-        return None
-
-    def get_alcohol_response(self, message: str) -> Optional[str]:
-        if any(word in message for word in ["ビール", "発泡酒"]):
-            return "ビールも大好き！特に新潟の地ビールとか、クラフトビールに興味があるんだ✨"
-        elif "ワイン" in message:
-            return "ワインも好きだよ！新潟にもワイナリーがあるの知ってる？たまにワイン片手にサスケと過ごすのも素敵な時間なんだ😊"
-        elif "焼酎" in message:
-            return "焼酎も実は好きなの！居酒屋でバイトしてた時に色々覚えたんだ💕"
-        return None
-
-    def get_shiori_detailed_response(self, message: str) -> Optional[str]:
-        if "年齢" in message or "何歳" in message:
-            return "しおりちゃんは17歳だよ！わたしより5歳下なんだ✨"
-        if "しおり" in message or "滝雲" in message:
-            responses = [
-                f"しおりちゃんは17歳の親友なの！福島県出身で、今は新潟で一緒に活動してるんだ✨ 黒猫のサチコと暮らしてて、ギターがすっごく上手いんだよ！",
-                "しおりちゃんとはボイトレやダンスレッスンでいつも一緒に頑張ってるの！お互い高め合える大切な存在なんだ💕",
-                f"しおりちゃんは福島から新潟に来て、にいがたIDOL projectで特別賞を獲ったんだ！その時からの大切な親友だよ✨"
-            ]
-            return random.choice(responses)
-        return None
 
     def get_chatgpt_response(self, user_id: str, user_message: str) -> Optional[str]:
         try:
@@ -511,35 +413,17 @@ class SakuragiPersonality:
                 timeout=20.0
             )
             
-            for attempt in range(self.max_retry_attempts):
-                try:
-                    response = client.chat.completions.create(
-                        model="gpt-4-1106-preview",
-                        messages=[
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": user_message}
-                        ],
-                        temperature=0.7,
-                        max_tokens=250,
-                        presence_penalty=0.6,
-                        frequency_penalty=0.2
-                    )
-                    
-                    response_text = response.choices[0].message.content
-                    
-                    if self.validate_response(response_text):
-                        return response_text
-                    
-                    logger.warning(f"Invalid response format, attempt {attempt + 1}")
-                    continue
-                    
-                except Exception as e:
-                    logger.error(f"ChatGPT attempt {attempt + 1} failed: {str(e)}")
-                    if attempt == self.max_retry_attempts - 1:
-                        raise
-                    time.sleep(1)
-                    
-            return None
+            response = client.chat.completions.create(
+                model="gpt-4-1106-preview",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_message}
+                ],
+                temperature=0.7,
+                max_tokens=250
+            )
+            
+            return response.choices[0].message.content
 
         except Exception as e:
             logger.error(f"ChatGPT error: {str(e)}")
@@ -603,7 +487,7 @@ def handle_message(event):
             logger.info("Unauthorized user attempted access")
             return
 
-        # レスポンスの生成（テキストと画像）
+        # レスポンスの生成
         messages = sakuragi.get_appropriate_response(user_id, user_message)
         line_bot_api.reply_message(event.reply_token, messages)
         logger.info(f"Sent response: {messages}")
@@ -619,3 +503,4 @@ def handle_message(event):
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
+```
