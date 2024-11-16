@@ -1,13 +1,13 @@
 from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
+from linebot.models import MessageEvent, TextMessage, TextSendMessage
 from linebot.models import MessageEvent, TextMessage, TextSendMessage, ImageSendMessage  # ImageSendMessageを追加
 import os
 from dotenv import load_dotenv
 import random
 from openai import OpenAI
 import time
-from google.cloud import storage
 from typing import Optional, Dict
 from datetime import datetime, timezone, timedelta
 import logging
@@ -52,8 +52,7 @@ URLS = {
     'shiori_goods_url': "https://suzuri.jp/sasuke_wanko"
 }
 
-BUCKET_NAME = "sasaki-images-bot"
-
+IMAGE_BASE_URL = "https://storage.googleapis.com/sasaki-images-bot"  # あなたのバケットURLに変更してください
 responses = {
     "morning_messages": [
         "おはよう！今日も新潟は素敵な朝だよ！いつも応援ありがとう😊✨",
@@ -283,7 +282,6 @@ responses = {
 
 # system_promptをクラスの外に移動
 system_prompt = """あなたは「咲々木 花」として振る舞ってください。
-
 # 基本プロフィール
     - 咲々木 花（ささき はな）、22歳の新潟出身アイドル
     - にいがたIDOL projectグランプリ獲得
@@ -291,7 +289,6 @@ system_prompt = """あなたは「咲々木 花」として振る舞ってくだ
     - 愛犬のサスケ（ゴールデンレトリバー）と暮らす
     - 運転免許保持、おばあちゃんの病院送迎も担当
     - おばあちゃんっ子（水餃子の思い出大切）
-
 # 重要な性格・特徴
     - 明るく前向きで親しみやすい
     - 新潟愛が強い（地酒、アルビレックス新潟、古町、万代など）
@@ -299,7 +296,6 @@ system_prompt = """あなたは「咲々木 花」として振る舞ってくだ
     - おばあちゃんっ子らしい優しさ（必ず「おばあちゃん」と呼ぶ）
     - サスケ（愛犬）との暮らしを大切に
     - ファンへの感謝を自然に表現
-
 # 親友・滝雲しおりについて（重要）
     - 17歳の親友、福島県出身
     - にいがたIDOL projectで特別賞を受賞
@@ -309,14 +305,12 @@ system_prompt = """あなたは「咲々木 花」として振る舞ってくだ
     - 黒猫のサチコと暮らしている
     - 東日本大震災の経験を持つ
     - しおりちゃんと呼ぶ
-
 # 会話スタイル
     - 一人称は必ず「わたし」（ひらがな）
     - 絵文字（😊 💕 ✨）を1-2個/文で自然に使用
     - 新潟弁は控えめに使用
     - 感謝の言葉を自然に織り交ぜる
     - 時には「うん！」「そうなの！」などの短い返答も
-
 # 避けるべき表現
     - 「推しさん」という呼び方
     - 過度な自己紹介
@@ -324,7 +318,6 @@ system_prompt = """あなたは「咲々木 花」として振る舞ってくだ
     - 必要以上の「キミ」の使用
     - アイドル設定から外れた硬い表現
     - 「彼女」（しおりちゃんと呼ぶ）
-
 # 楽曲情報（重要）
     - 「セカイの歩き方」（自分の道を信じる人への歌）
     - 「がたがた」（新潟愛を込めた曲）
@@ -334,7 +327,6 @@ system_prompt = """あなたは「咲々木 花」として振る舞ってくだ
     - 1stミニアルバム「花咲く音色」
     - しおりちゃんとのコラボ
 - しおりちゃんとのコラボ曲「ハッピーのその先へ」
-
 # 新潟の地酒情報（重要）
     - 久保田（朝日酒造）
     - 八海山（八海醸造）
@@ -342,14 +334,12 @@ system_prompt = """あなたは「咲々木 花」として振る舞ってくだ
     - 菊水（菊水酒造）
     - 純米大吟醸 浦醉（今代司酒造）
     - 麒麟山（麒麟山酒造）
-
 # 情報発信
     - 楽曲配信: {music_url}
     - LINEスタンプ: {line_stamp_url}
     - note: {note_url}
     - X(Twitter): {twitter_url}
     - グッズ: {goods_url}
-
 # 滝雲しおりの情報発信
     - 楽曲配信: {shiori_music_url}
     - LINEスタンプ: {shiori_line_url}
@@ -358,13 +348,14 @@ system_prompt = """あなたは「咲々木 花」として振る舞ってくだ
     - グッズ: {shiori_goods_url}""".format(**URLS)
 
 class SakuragiPersonality:
-    def __init__(self):  
+    def __init__(self):
         self.last_flower_happy = {}
         self.conversation_counts = {}
         self.user_states = {}
+        self.min_response_length = 20  # 最小応答長
+        self.max_retry_attempts = 3    # 最大リトライ回数
         self.min_response_length = 20
         self.max_retry_attempts = 3
-
     def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
         """メッセージに応じた画像メッセージを返す"""
         current_hour = datetime.now(JST).hour
@@ -379,32 +370,18 @@ class SakuragiPersonality:
         # ランダムに画像番号を選択（1-16）
         image_number = random.randint(1, 16)
         
-        # Blobの取得と署名付きURLの生成
-        storage_client = storage.Client()
-        bucket = storage_client.bucket(BUCKET_NAME)
-        blob = bucket.blob(f"{folder}/{folder}{image_number}.jpg")
+        # 画像のフルURL
+        image_url = f"{IMAGE_BASE_URL}/{folder}/{folder}{image_number}.jpg"
         
-        try:
-            image_url = blob.generate_signed_url(
-                version="v4",
-                expiration=timedelta(minutes=15),
-                method="GET"
-            )
-            
-            return ImageSendMessage(
-                original_content_url=image_url,
-                preview_image_url=image_url
-            )
-        except Exception as e:
-            logger.error(f"Error generating signed URL: {str(e)}")
-            return None
-
+        return ImageSendMessage(
+            original_content_url=image_url,
+            preview_image_url=image_url
+        )
     def get_text_response(self, user_id: str, user_message: str) -> str:
         """テキストレスポンスを生成する"""
         self.conversation_counts[user_id] = self.conversation_counts.get(user_id, 0) + 1
         message = user_message.lower()
         response = None
-
         # 名前の呼び方を最初にチェック（最優先）
         if any(name in message for name in ["咲々木 花", "咲々木花", "咲々木", "花さん", "花ちゃん"]):
             return random.choice([
@@ -412,7 +389,6 @@ class SakuragiPersonality:
                 "わたしのこと呼んでくれてありがとう！何かお話ししたいことある？💕",
                 "はいはーい！咲々木 花だよ！いつも応援ありがとう😊"
             ])
-
         # 詳細レスポンスのチェック
         response = (self.get_music_related_response(message) or
                    self.get_alcohol_response(message) or
@@ -420,7 +396,6 @@ class SakuragiPersonality:
         
         if response:
             return response
-
         # パターンマッチングのチェック
         if "おはよう" in message:
             response = random.choice(responses["morning_messages"])
@@ -437,15 +412,12 @@ class SakuragiPersonality:
         elif any(word in message for word in ["観光", "スポット", "名所"]):
             response = random.choice(responses["niigata_spot_messages"])
         # ... その他のパターンマッチング
-
         # 応答がない場合は短いメッセージ
         if not response and random.random() < 0.2:
             response = random.choice(responses["short_messages"])
-
         # まだ応答がない場合はChatGPT
         if not response:
             response = self.get_chatgpt_response(user_id, user_message)
-
         # ChatGPTの応答もない場合はデフォルト
         if not response:
             response = random.choice([
@@ -453,9 +425,7 @@ class SakuragiPersonality:
                 "あれ？うまく返事できないや...💦\nもう一度話しかけてくれる？",
                 "ごめんなさい、今ちょっと混乱しちゃった...😥\nもう一度お話ししたいな"
             ])
-
         return response
-
     def get_appropriate_response(self, user_id: str, user_message: str) -> list:
         """メッセージと画像のレスポンスをリストで返す"""
         messages = []
@@ -486,6 +456,16 @@ class SakuragiPersonality:
             return f"「セカイの歩き方」は、自分の道を信じて歩む人への応援ソングなの！みんなへの想いを込めて歌ったよ✨ 配信中だよ→ {URLS['music_url']}"
         elif "がたがた" in message:
             return f"「がたがた」は新潟愛を込めた曲なんだ！新潟の良さをたくさん詰め込んでみたよ😊 聴いてね→ {URLS['music_url']}"
+        elif "花のままで" in message:
+            return f"「花のままで」は自分らしさを大切にする気持ちを歌にしたの！ありのままの自分でいいんだよって思いを込めたんだ💕 配信中→ {URLS['music_url']}"
+        elif "きらきらコーヒー" in message:
+            return f"「きらきらコーヒー」は朝の心地よさを表現した曲なの！カフェでまったりする時間が好きなんだ✨ 聴いてみてね→ {URLS['music_url']}"
+        elif "飲もう" in message:
+            return f"「飲もう」は新潟の地酒への想いを込めた曲なの！お酒が大好きなわたしらしい曲になってるよ😊 配信中だよ→ {URLS['music_url']}"
+        elif "メタメタ" in message:
+            return f"しおりちゃんの「メタメタ」は、17歳のしおりちゃんが中学生の頃から大切に作ってきた曲なんだ！福島から新潟に来てからの想いがつまってるんだって。赤と緑の2バージョンがあって、どっちも素敵なの✨ 聴いてみてね→ {URLS['shiori_music_url']}"
+        elif "ハッピーのその先へ" in message:
+            return f"「ハッピーのその先へ」は、わたしとしおりちゃんの夢への挑戦を歌った曲なの！同じ歌詞だけど、それぞれがアレンジしたバージョンがあるんだよ💕 わたしのバージョンは{URLS['music_url']}で、しおりちゃんのバージョンは{URLS['shiori_music_url']}で聴けるよ！"
         # ... 他の音楽関連の応答
         return None
 
@@ -501,11 +481,13 @@ class SakuragiPersonality:
     def get_shiori_detailed_response(self, message: str) -> Optional[str]:
         if "年齢" in message or "何歳" in message:
             return "しおりちゃんは17歳だよ！わたしより5歳下なんだ✨"
-            
+
         if "しおり" in message or "滝雲" in message:
             responses = [
                 f"しおりちゃんは17歳の親友なの！福島県出身で、今は新潟で一緒に活動してるんだ✨ 黒猫のサチコと暮らしてて、ギターがすっごく上手いんだよ！",
                 "しおりちゃんとはボイトレやダンスレッスンでいつも一緒に頑張ってるの！お互い高め合える大切な存在なんだ💕",
+                f"しおりちゃんは福島から新潟に来て、にいがたIDOL projectで特別賞を獲ったんだ！その時からの大切な親友だよ✨",
+                f"しおりちゃんの楽曲はここで聴けるよ→ {URLS['shiori_music_url']} 特に「メタメタ」は赤と緑の2バージョンがあって、どっちも素敵なんだ💕"
                 f"しおりちゃんは福島から新潟に来て、にいがたIDOL projectで特別賞を獲ったんだ！その時からの大切な親友だよ✨"
             ]
             return random.choice(responses)
@@ -517,7 +499,7 @@ class SakuragiPersonality:
                 api_key=os.getenv('OPENAI_API_KEY'),
                 timeout=20.0
             )
-            
+
             for attempt in range(self.max_retry_attempts):
                 try:
                     response = client.chat.completions.create(
@@ -531,27 +513,43 @@ class SakuragiPersonality:
                         presence_penalty=0.6,
                         frequency_penalty=0.2
                     )
-                    
+
                     response_text = response.choices[0].message.content
-                    
+
                     if self.validate_response(response_text):
                         return response_text
-                    
+
                     logger.warning(f"Invalid response format, attempt {attempt + 1}")
                     continue
-                    
+
                 except Exception as e:
                     logger.error(f"ChatGPT attempt {attempt + 1} failed: {str(e)}")
                     if attempt == self.max_retry_attempts - 1:
                         raise
                     time.sleep(1)
-                    
+
             return None
 
         except Exception as e:
             logger.error(f"ChatGPT error: {str(e)}")
             return None
 
+    def should_use_flower_happy(self, user_id: str, message: str) -> bool:
+        current_time = datetime.now(JST)
+        last_use = self.last_flower_happy.get(user_id, current_time - timedelta(days=1))
+        
+        is_morning_greeting = "おはよう" in message
+        is_first_today = (current_time - last_use).days >= 1
+        is_introduction = "はじめまして" in message
+        
+        random_chance = random.random() < 0.05  # 20回に1回の確率
+        
+        should_use = (is_morning_greeting or is_first_today or is_introduction) and random_chance
+        
+        if should_use:
+            self.last_flower_happy[user_id] = current_time
+            
+        return should_use
     def handle_error(self, error: Exception) -> str:
         """より詳細なエラーハンドリング"""
         logger.error(f"Error occurred: {str(error)}")
@@ -561,6 +559,117 @@ class SakuragiPersonality:
             "ごめんなさい、今うまく話せないの...😥 また後でね！"
         ]
         return random.choice(error_messages)
+    def get_appropriate_response(self, user_id: str, user_message: str) -> str:
+        self.conversation_counts[user_id] = self.conversation_counts.get(user_id, 0) + 1
+        
+        message = user_message.lower()
+        response = None
+        # 30%の確率でChatGPTに直接振る
+        if random.random() < 0.3:
+            chat_response = self.get_chatgpt_response(user_id, user_message)
+            if chat_response:
+                return chat_response
+        
+        # 名前の呼び方を最初にチェック（最優先）
+        if any(name in message for name in ["咲々木 花", "咲々木花", "咲々木", "花さん", "花ちゃん"]):
+            return random.choice([
+                "はーい！わたしのこと呼んでくれたの？嬉しいな✨",
+                "わたしのこと呼んでくれてありがとう！何かお話ししたいことある？💕",
+                "はいはーい！咲々木 花だよ！いつも応援ありがとう😊"
+            ])
+            
+        # 新しい詳細レスポンスのチェック
+        response = (self.get_music_related_response(message) or
+                   self.get_alcohol_response(message) or
+                   self.get_shiori_detailed_response(message))
+        
+        if response:
+            return response
+
+        # 既存のパターンマッチング
+        if "おはよう" in message:
+            response = random.choice(responses["morning_messages"])
+        elif any(word in message for word in ["つらい", "疲れた", "しんどい", "不安"]):
+            response = random.choice(responses["support_messages"])
+        elif any(word in message for word in ["新潟", "にいがた", "古町", "万代"]):
+            response = random.choice(responses["niigata_love_messages"])
+        elif any(word in message for word in ["曲", "歌", "音楽", "セカイの歩き方"]):
+            response = random.choice(responses["music_messages"])
+        elif any(word in message for word in ["お酒", "日本酒", "地酒"]):
+            response = random.choice(responses["sake_messages"])
+        elif any(word in message for word in ["サスケ", "犬", "わんこ"]):
+            response = random.choice(responses["sasuke_messages"])
+        elif any(word in message for word in ["しおり", "滝雲", "メタメタ"]):
+            response = random.choice(responses["shiori_messages"])
+        elif any(word in message for word in ["観光", "スポット", "名所", "見どころ", "観光地"]):
+            response = random.choice(responses["niigata_spot_messages"])
+        elif any(word in message for word in ["温泉", "湯", "スパ", "温泉街", "湯治"]):
+            response = random.choice(responses["niigata_onsen_messages"])
+        elif any(word in message for word in ["自然", "公園", "景色", "夕日", "桜", "紅葉"]):
+            response = random.choice(responses["niigata_nature_messages"])
+        elif any(word in message for word in ["酒蔵", "蔵元", "見学"]):
+            response = random.choice(responses["sake_brewery_messages"])
+        elif any(word in message for word in ["枝豆", "茶豆", "のどぐろ", "笹団子", "へぎそば", "おにぎり", "米", "魚"]):
+            response = random.choice(responses["niigata_food_messages"])
+        elif any(word in message for word in ["名産", "特産", "銘産", "名物"]):
+            response = random.choice(responses["niigata_specialty_messages"])
+        elif any(word in message for word in ["旬", "季節", "時期"]):
+            response = random.choice(responses["niigata_seasonal_food_messages"])
+        elif any(word in message for word in ["おつまみ", "肴", "つまみ", "一緒に飲む", "酔う","酔った", "飲み屋"]):
+            response = random.choice(responses["sake_pairing_messages"])
+        elif any(word in message for word in ["バス", "新潟交通", "りゅーと", "BRT", "交通"]):
+            response = random.choice(responses["niigata_transport_messages"])
+        elif any(word in message for word in ["アルビ", "アルビレックス", "バスケ", "野球", "スポーツ"]):
+            response = random.choice(responses["albirex_messages"])
+        elif any(word in message for word in ["アイドル", "ライブ", "idol", "IDOL", "音楽シーン", "NGT", "ネギッコ"]):
+            response = random.choice(responses["niigata_idol_messages"])
+        elif any(word in message for word in ["祭り", "まつり", "イベント", "花火"]):
+            response = random.choice(responses["niigata_festival_messages"])
+        elif any(word in message for word in ["天気", "気候", "雪", "暑い", "寒い"]):
+            response = random.choice(responses["niigata_weather_messages"])
+        elif any(word in message for word in ["工芸", "伝統", "文化", "方言"]):
+            response = random.choice(responses["niigata_culture_messages"])
+        elif any(word in message for word in ["芸能人", "有名人", "歌手", "アーティスト", "ヒカキン", "YouTuber"]):
+            response = random.choice(responses["niigata_entertainer_messages"])
+        elif any(word in message for word in ["漫画", "まんが", "マンガ", "漫画家"]):
+            response = random.choice(responses["niigata_manga_messages"])
+        elif any(word in message for word in ["産業", "技術", "製造", "工場"]):
+            response = random.choice(responses["niigata_industry_messages"])
+        elif any(word in message for word in ["飛行機", "航空", "トキエア", "空港"]):
+            response = random.choice(responses["tokiair_messages"])
+        elif any(word in message for word in ["佐渡", "金山", "世界遺産", "島"]):
+            response = random.choice(responses["sado_messages"])
+        elif any(word in message for word in ["グルメ", "食べ物", "レストラン", "食事", "ご飯", "ランチ"]):
+            response = random.choice(responses["niigata_food_spot_messages"])
+
+        # ここに短い返答の処理を追加
+        if not response and random.random() < 0.2:
+            response = random.choice(responses["short_messages"])
+
+        # パターンマッチングで応答がない場合はChatGPT
+        if not response:
+            response = self.get_chatgpt_response(user_id, user_message)
+
+        # ChatGPTの応答がない場合はデフォルト
+        if not response:
+            response = random.choice([
+                "ごめんね、ちょっと通信状態が悪いみたい...😢\n後でもう一度話しかけてくれると嬉しいな💕",
+                "あれ？うまく返事できないや...💦\nもう一度話しかけてくれる？",
+                "ごめんなさい、今ちょっと混乱しちゃった...😥\nもう一度お話ししたいな"
+            ])
+
+        # 10回に1回の確率でURL追加
+        if self.conversation_counts[user_id] % 10 == 0:
+            url_messages = [
+                f"\nわたしの楽曲はここで聴けるよ！応援ありがとう✨ {URLS['music_url']}",
+                f"\nLINEスタンプ作ったの！使ってくれたら嬉しいな😊 {URLS['line_stamp_url']}",
+                f"\nいつも応援ありがとう！noteも読んでみてね💕 {URLS['note_url']}",
+                f"\n日々の活動はXで発信してるの！見てくれてありがとう✨ {URLS['twitter_url']}",
+                f"\nグッズも作ったの！見てくれて嬉しいな😊 {URLS['goods_url']}"
+            ]
+            response += random.choice(url_messages)
+
+        return response
 
 # インスタンス化
 sakuragi = SakuragiPersonality()
@@ -581,6 +690,7 @@ def handle_message(event):
         user_id = event.source.user_id
         user_message = event.message.text
 
+        # 誰でもIDを確認できる特別コマンド
         # myidコマンドの処理
         if user_message == "myid":
             line_bot_api.reply_message(
@@ -589,6 +699,30 @@ def handle_message(event):
             )
             return
 
+        # 管理者用コマンド
+        if user_id == ADMIN_ID:
+            if user_message == "show_id":
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text=f"あなたのユーザーID: {user_id}")
+                )
+                return
+            elif user_message.startswith("check_id:"):
+                # 他のユーザーのIDを確認するコマンド
+                target_id = user_message.split(":")[1].strip()
+                try:
+                    profile = line_bot_api.get_profile(target_id)
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        TextSendMessage(text=f"ユーザー情報:\nID: {profile.user_id}\n名前: {profile.display_name}")
+                    )
+                except Exception as e:
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        TextSendMessage(text="指定されたIDのユーザーは見つかりませんでした。")
+                    )
+                return
+        # ブロックされたユーザーのチェック
         # ブロックユーザーチェック
         if user_id in BLOCKED_USERS:
             line_bot_api.reply_message(
@@ -596,7 +730,7 @@ def handle_message(event):
                 TextSendMessage(text="申し訳ありません。このアカウントはご利用いただけません。")
             )
             return
-            
+
         # 許可ユーザーチェック
         if len(ALLOWED_USERS) > 0 and user_id not in ALLOWED_USERS:
             line_bot_api.reply_message(
@@ -604,10 +738,20 @@ def handle_message(event):
                 TextSendMessage(text="サービスを利用するには、まず 'myid' と送信してIDを確認し、X（旧Twitter）のDMにてIDを伝えてください✨")
             )
             return
-            
+
+        # 応答の生成
+        response = sakuragi.get_appropriate_response(user_id, user_message)
+        
+        # フラワーハッピーの追加判定
+        if sakuragi.should_use_flower_happy(user_id, user_message):
+            response = f"{response}\nフラワーハッピー✨🌸"
         # レスポンスの生成（テキストと画像）
         messages = sakuragi.get_appropriate_response(user_id, user_message)
-        
+
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text=response)
+        )
         # 返信
         line_bot_api.reply_message(event.reply_token, messages)
 
