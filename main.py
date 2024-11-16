@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 import random
 from openai import OpenAI
 import time
-from google.cloud import storage
 from typing import Optional, Dict
 from datetime import datetime, timezone, timedelta
 import logging
@@ -361,6 +360,7 @@ class SakuragiPersonality:
 
     def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
         """メッセージに応じた画像メッセージを返す"""
+        return None
         current_hour = datetime.now(JST).hour
         
         # おはよう、お疲れ系のメッセージかチェック
