@@ -431,7 +431,6 @@ class SakuragiPersonality:
             )
             
             return response.choices[0].message.content
-
         except Exception as e:
             logger.error(f"ChatGPT error: {str(e)}")
             return None
@@ -446,8 +445,10 @@ class SakuragiPersonality:
         ]
         return random.choice(error_messages)
 
+
 # sakuragiのインスタンス化
 sakuragi = SakuragiPersonality()
+
 
 @app.route("/callback", methods=['POST'])
 def callback():
@@ -459,12 +460,12 @@ def callback():
         abort(400)
     return 'OK'
 
+
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     try:
         user_id = event.source.user_id
         user_message = event.message.text
-
         logger.info(f"Received message from {user_id}: {user_message}")
 
         # myidコマンドの処理
@@ -507,7 +508,7 @@ def handle_message(event):
             TextSendMessage(text=error_response)
         )
 
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
-```
