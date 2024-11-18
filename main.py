@@ -12,6 +12,10 @@ from datetime import datetime, timezone, timedelta
 from google.cloud import storage
 import logging
 
+# 環境変数の設定
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'key.json'
+
+# ログ設定
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
