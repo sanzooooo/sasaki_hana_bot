@@ -30,45 +30,6 @@ handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 JST = timezone(timedelta(hours=+9), 'JST')
 BUCKET_NAME = "sasaki-images-bot"
 
-# ここに既存のコードが続くとして...
-
-def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
-    """メッセージに応じた画像メッセージを返す"""
-    # メッセージチェック
-    if not any(word in message for word in ["おはよう", "お疲れ", "おつかれ"]):
-        return None
-
-    try:
-        # 現在時刻を取得してフォルダを決定
-        current_hour = datetime.now(JST).hour
-        folder = "morning" if 5 <= current_hour < 17 else "evening"
-        
-        # ランダムに画像を選択
-        image_number = random.randint(1, 16)
-        image_path = f"{folder}/{folder}{image_number}.jpg"
-        
-        # Cloud Storageクライアントの初期化
-        storage_client = storage.Client()
-        bucket = storage_client.bucket(BUCKET_NAME)
-        blob = bucket.blob(image_path)
-        
-        # 署名付きURLを生成（15分有効）
-        image_url = blob.generate_signed_url(
-            version="v4",
-            expiration=timedelta(minutes=15),
-            method="GET"
-        )
-        
-        # 画像メッセージを作成
-        return ImageSendMessage(
-            original_content_url=image_url,
-            preview_image_url=image_url
-        )
-    
-    except Exception as e:
-        logger.error(f"Error generating image message: {str(e)}")
-        return None
-
 # 設定
 ADMIN_ID = [
     "U0cf263ba9e075fcac42d60e20bd950c3",
@@ -417,33 +378,34 @@ class SakuragiPersonality:
             # 現在時刻を取得してフォルダを決定
             current_hour = datetime.now(JST).hour
             folder = "morning" if 5 <= current_hour < 17 else "evening"
-        
+            
             # ランダムに画像を選択
             image_number = random.randint(1, 16)
             image_path = f"{folder}/{folder}{image_number}.jpg"
-        
+            
             # Cloud Storageクライアントの初期化
             storage_client = storage.Client()
             bucket = storage_client.bucket(BUCKET_NAME)
             blob = bucket.blob(image_path)
-        
+            
             # 署名付きURLを生成（15分有効）
             image_url = blob.generate_signed_url(
                 version="v4",
                 expiration=timedelta(minutes=15),
                 method="GET"
             )
-        
+            
             # 画像メッセージを作成
             return ImageSendMessage(
                 original_content_url=image_url,
                 preview_image_url=image_url
             )
-    
+        
         except Exception as e:
             logger.error(f"Error generating image message: {str(e)}")
             return None
 
+    
     def get_text_response(self, user_id: str, message: str) -> str:
         logger.info(f"Processing message: {message}")
         response = ""
@@ -478,9 +440,12 @@ class SakuragiPersonality:
 
         # ChatGPTを1回だけ呼び出す
         if not response:
-            gpt_response = self.get_chatgpt_response(user_id, message)
-        if gpt_response:
-            response = gpt_response
+            try:
+                gpt_response = self.get_chatgpt_response(user_id, message)
+                if gpt_response:
+                    response = gpt_response
+            except Exception as e:
+                logger.error(f"ChatGPT error in get_text_response: {str(e)}")
 
         if not response:
             response = random.choice(responses["short_messages"])
