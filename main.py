@@ -428,22 +428,22 @@ class SakuragiPersonality:
             bucket = storage_client.bucket(BUCKET_NAME)
             blob = bucket.blob(image_path)
         
-        # 署名付きURLを生成（15分有効）
-        image_url = blob.generate_signed_url(
-            version="v4",
-            expiration=timedelta(minutes=15),
-            method="GET"
-        )
+            # 署名付きURLを生成（15分有効）
+            image_url = blob.generate_signed_url(
+                version="v4",
+                expiration=timedelta(minutes=15),
+                method="GET"
+            )
         
-        # 画像メッセージを作成
-        return ImageSendMessage(
-            original_content_url=image_url,
-            preview_image_url=image_url
-        )
+            # 画像メッセージを作成
+            return ImageSendMessage(
+                original_content_url=image_url,
+                preview_image_url=image_url
+            )
     
-    except Exception as e:
-        logger.error(f"Error generating image message: {str(e)}")
-        return None
+        except Exception as e:
+            logger.error(f"Error generating image message: {str(e)}")
+            return None
 
         # 名前の呼び方を最初にチェック
         if any(name in message for name in ["咲々木 花", "咲々木花", "咲々木", "花さん", "花ちゃん"]):
