@@ -497,11 +497,16 @@ class SakuragiPersonality:
                 response = chat_response.choices[0].message.content
             except Exception as e:
                 logger.error(f"ChatGPT error: {str(e)}")
+
+        # パターンマッチングで応答がない場合、ChatGPTを使用
+        if not response:
+            gpt_response = self.get_chatgpt_response(user_id, message)
+            if gpt_response:
+                response = gpt_response
                 
         # それでも応答がない場合は短いメッセージ
         if not response:
             response = random.choice(responses["short_messages"])
-
         return response
 
     def get_shiori_detailed_response(self, message: str) -> Optional[str]:
