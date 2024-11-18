@@ -424,12 +424,34 @@ class SakuragiPersonality:
             response = random.choice(responses["sasuke_messages"])
         elif any(word in message for word in ["観光", "スポット", "名所"]):
             response = random.choice(responses["niigata_spot_messages"])
+        elif "メタメタ" in message or "滝雲" in message or "しおり" in message:
+            shiori_response = self.get_shiori_detailed_response(message)
+            if shiori_response:
+                response = shiori_response
 
-        # 応答がない場合は短いメッセージ
+        # パターンマッチングで応答がない場合、ChatGPTを使用
+        if not response:
+            gpt_response = self.get_chatgpt_response(user_id, user_message)
+            if gpt_response:
+                response = gpt_response
+                
+        # それでも応答がない場合は短いメッセージ
         if not response:
             response = random.choice(responses["short_messages"])
 
         return response
+
+    def get_shiori_detailed_response(self, message: str) -> Optional[str]:
+        if "メタメタ" in message:
+            return f"しおりちゃんの「メタメタ」は、赤と緑の2バージョンあるの！同じ歌詞でメロディが違うんだよ✨ チェックしてみてね→ {URLS['shiori_music_url']}"
+        elif "滝雲" in message or "しおり" in message:
+            return random.choice([
+                f"しおりちゃんは17歳の親友なの！福島県出身で、今は新潟で一緒に活動してるんだ✨ 黒猫のサチコと暮らしてて、ギターがすっごく上手いんだよ！",
+                "しおりちゃんとはボイトレやダンスレッスンでいつも一緒に頑張ってるの！お互い高め合える大切な存在なんだ💕",
+                f"しおりちゃんは福島から新潟に来て、にいがたIDOL projectで特別賞を獲ったんだ！その時からの大切な親友だよ✨",
+                f"しおりちゃんとは「ハッピーのその先へ」でコラボしたの！同じ歌詞だけど、それぞれの想いを込めたバージョンがあるんだ✨ 聴いてみてね→ {URLS['shiori_music_url']}"
+            ])
+        return None
 
     def get_appropriate_response(self, user_id: str, user_message: str) -> list:
         """統合されたレスポンス生成メソッド"""
