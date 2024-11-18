@@ -364,36 +364,17 @@ class SakuragiPersonality:
 
     def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
         """メッセージに応じた画像メッセージを返す"""
-        current_hour = datetime.now(JST).hour
-    
         # おはよう、お疲れ系のメッセージかチェック
         if not any(word in message for word in ["おはよう", "お疲れ", "おつかれ"]):
             return None
+
+        # テスト用の固定URL
+        test_url = "https://example.com/test.jpg"
         
-        # 時間帯で画像フォルダを選択
-        folder = "morning" if 5 <= current_hour < 17 else "evening"
-    
-        # ランダムに画像番号を選択（1-16）
-        image_number = random.randint(1, 16)
-    
-        try:
-            # 署名付きURLを生成
-            storage_client = storage.Client()
-            bucket = storage_client.bucket(BUCKET_NAME)
-            blob = bucket.blob(f"{folder}/{folder}{image_number}.jpg")
-            image_url = blob.generate_signed_url(
-                version="v4",
-                expiration=timedelta(minutes=15),
-                method="GET"
-            )
-        
-            return ImageSendMessage(
-                original_content_url=image_url,
-                preview_image_url=image_url
-            )
-        except Exception as e:
-            logger.error(f"Error generating image message: {str(e)}")
-            return None
+        return ImageSendMessage(
+            original_content_url=test_url,
+            preview_image_url=test_url
+        )
 
     def get_text_response(self, user_id: str, user_message: str) -> str:
         """テキストレスポンスを生成する"""
