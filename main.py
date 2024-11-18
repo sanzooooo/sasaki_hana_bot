@@ -445,6 +445,9 @@ class SakuragiPersonality:
             logger.error(f"Error generating image message: {str(e)}")
             return None
 
+    def get_text_response(self, user_id: str, message: str) -> str:
+        response = ""
+        
         # 名前の呼び方を最初にチェック
         if any(name in message for name in ["咲々木 花", "咲々木花", "咲々木", "花さん", "花ちゃん"]):
             return random.choice([
