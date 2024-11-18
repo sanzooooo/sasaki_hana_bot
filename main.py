@@ -409,8 +409,7 @@ class SakuragiPersonality:
         self.max_retry_attempts = 3
 
     def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
-    　　 """メッセージに応じた画像メッセージを返す"""
-        # メッセージチェック
+        """メッセージに応じた画像メッセージを返す"""
         if not any(word in message for word in ["おはよう", "お疲れ", "おつかれ"]):
             return None
 
@@ -446,6 +445,7 @@ class SakuragiPersonality:
             return None
 
     def get_text_response(self, user_id: str, message: str) -> str:
+        logger.info(f"Processing message: {message}")
         response = ""
         
         # 名前の呼び方を最初にチェック
@@ -478,9 +478,25 @@ class SakuragiPersonality:
 
         # パターンマッチングで応答がない場合、ChatGPTを使用
         if not response:
-            gpt_response = self.get_chatgpt_response(user_id, user_message)
-            if gpt_response:
-                response = gpt_response
+            try:
+               client = OpenAI(
+                   api_key=os.getenv('OPENAI_API_KEY'),
+                   timeout=20.0
+               )
+        
+               chat_response = client.chat.completions.create(
+                   model="gpt-4-1106-preview",
+                   messages=[
+                       {"role": "system", "content": system_prompt},
+                       {"role": "user", "content": message}
+                   ],
+                   temperature=0.7,
+                   max_tokens=250
+                )
+        
+                response = chat_response.choices[0].message.content
+            except Exception as e:
+                logger.error(f"ChatGPT error: {str(e)}")
                 
         # それでも応答がない場合は短いメッセージ
         if not response:
