@@ -409,24 +409,24 @@ class SakuragiPersonality:
         self.max_retry_attempts = 3
 
     def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
-    """メッセージに応じた画像メッセージを返す"""
-    # メッセージチェック
-    if not any(word in message for word in ["おはよう", "お疲れ", "おつかれ"]):
-        return None
+    　　 """メッセージに応じた画像メッセージを返す"""
+        # メッセージチェック
+        if not any(word in message for word in ["おはよう", "お疲れ", "おつかれ"]):
+            return None
 
-    try:
-        # 現在時刻を取得してフォルダを決定
-        current_hour = datetime.now(JST).hour
-        folder = "morning" if 5 <= current_hour < 17 else "evening"
+        try:
+            # 現在時刻を取得してフォルダを決定
+            current_hour = datetime.now(JST).hour
+            folder = "morning" if 5 <= current_hour < 17 else "evening"
         
-        # ランダムに画像を選択
-        image_number = random.randint(1, 16)
-        image_path = f"{folder}/{folder}{image_number}.jpg"
+            # ランダムに画像を選択
+            image_number = random.randint(1, 16)
+            image_path = f"{folder}/{folder}{image_number}.jpg"
         
-        # Cloud Storageクライアントの初期化
-        storage_client = storage.Client()
-        bucket = storage_client.bucket(BUCKET_NAME)
-        blob = bucket.blob(image_path)
+            # Cloud Storageクライアントの初期化
+            storage_client = storage.Client()
+            bucket = storage_client.bucket(BUCKET_NAME)
+            blob = bucket.blob(image_path)
         
         # 署名付きURLを生成（15分有効）
         image_url = blob.generate_signed_url(
