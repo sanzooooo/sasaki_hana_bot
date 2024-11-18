@@ -476,35 +476,12 @@ class SakuragiPersonality:
             if shiori_response:
                 response = shiori_response
 
-        # パターンマッチングで応答がない場合、ChatGPTを使用
-        if not response:
-            try:
-               client = OpenAI(
-                   api_key=os.getenv('OPENAI_API_KEY'),
-                   timeout=20.0
-               )
-        
-               chat_response = client.chat.completions.create(
-                   model="gpt-4-1106-preview",
-                   messages=[
-                       {"role": "system", "content": system_prompt},
-                       {"role": "user", "content": message}
-                   ],
-                   temperature=0.7,
-                   max_tokens=250
-                )
-        
-                response = chat_response.choices[0].message.content
-            except Exception as e:
-                logger.error(f"ChatGPT error: {str(e)}")
-
-        # パターンマッチングで応答がない場合、ChatGPTを使用
+        # ChatGPTを1回だけ呼び出す
         if not response:
             gpt_response = self.get_chatgpt_response(user_id, message)
-            if gpt_response:
-                response = gpt_response
-                
-        # それでも応答がない場合は短いメッセージ
+        if gpt_response:
+            response = gpt_response
+
         if not response:
             response = random.choice(responses["short_messages"])
         return response
