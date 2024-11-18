@@ -33,6 +33,8 @@ ADMIN_ID = [
 ALLOWED_USERS = [
     "U0cf263ba9e075fcac42d60e20bd950c3",
     "U843f1d83e5290eb9d12214439d8b0c31",
+    "Ua62b7e55c4b79d07b0644dd2da212b0d",
+    "Ubbe386d578937e92762dcff67e69cb02",
     "U1cce76e67021ec40b638d933fd7790da"
 ]
 
