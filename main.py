@@ -9,6 +9,7 @@ from openai import OpenAI
 import time
 from typing import Optional, Dict
 from datetime import datetime, timezone, timedelta
+from google.cloud import storage
 import logging
 
 logging.basicConfig(
@@ -17,13 +18,56 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# 環境変数の読み込み
 load_dotenv()
-app = Flask(__name__)
 
+# Flaskアプリケーションの初期化
+app = Flask(__name__)
 line_bot_api = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN'))
 handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 
+# 定数の定義
 JST = timezone(timedelta(hours=+9), 'JST')
+BUCKET_NAME = "sasaki-images-bot"
+
+# ここに既存のコードが続くとして...
+
+def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
+    """メッセージに応じた画像メッセージを返す"""
+    # メッセージチェック
+    if not any(word in message for word in ["おはよう", "お疲れ", "おつかれ"]):
+        return None
+
+    try:
+        # 現在時刻を取得してフォルダを決定
+        current_hour = datetime.now(JST).hour
+        folder = "morning" if 5 <= current_hour < 17 else "evening"
+        
+        # ランダムに画像を選択
+        image_number = random.randint(1, 16)
+        image_path = f"{folder}/{folder}{image_number}.jpg"
+        
+        # Cloud Storageクライアントの初期化
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(BUCKET_NAME)
+        blob = bucket.blob(image_path)
+        
+        # 署名付きURLを生成（15分有効）
+        image_url = blob.generate_signed_url(
+            version="v4",
+            expiration=timedelta(minutes=15),
+            method="GET"
+        )
+        
+        # 画像メッセージを作成
+        return ImageSendMessage(
+            original_content_url=image_url,
+            preview_image_url=image_url
+        )
+    
+    except Exception as e:
+        logger.error(f"Error generating image message: {str(e)}")
+        return None
 
 # 設定
 ADMIN_ID = [
@@ -365,24 +409,41 @@ class SakuragiPersonality:
         self.max_retry_attempts = 3
 
     def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
-        """メッセージに応じた画像メッセージを返す"""
-        # おはよう、お疲れ系のメッセージかチェック
-        if not any(word in message for word in ["おはよう", "お疲れ", "おつかれ"]):
-            return None
+    """メッセージに応じた画像メッセージを返す"""
+    # メッセージチェック
+    if not any(word in message for word in ["おはよう", "お疲れ", "おつかれ"]):
+        return None
 
-        # テスト用の固定URL
-        test_url = "https://example.com/test.jpg"
+    try:
+        # 現在時刻を取得してフォルダを決定
+        current_hour = datetime.now(JST).hour
+        folder = "morning" if 5 <= current_hour < 17 else "evening"
         
-        return ImageSendMessage(
-            original_content_url=test_url,
-            preview_image_url=test_url
+        # ランダムに画像を選択
+        image_number = random.randint(1, 16)
+        image_path = f"{folder}/{folder}{image_number}.jpg"
+        
+        # Cloud Storageクライアントの初期化
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(BUCKET_NAME)
+        blob = bucket.blob(image_path)
+        
+        # 署名付きURLを生成（15分有効）
+        image_url = blob.generate_signed_url(
+            version="v4",
+            expiration=timedelta(minutes=15),
+            method="GET"
         )
-
-    def get_text_response(self, user_id: str, user_message: str) -> str:
-        """テキストレスポンスを生成する"""
-        self.conversation_counts[user_id] = self.conversation_counts.get(user_id, 0) + 1
-        message = user_message.lower()
-        response = None
+        
+        # 画像メッセージを作成
+        return ImageSendMessage(
+            original_content_url=image_url,
+            preview_image_url=image_url
+        )
+    
+    except Exception as e:
+        logger.error(f"Error generating image message: {str(e)}")
+        return None
 
         # 名前の呼び方を最初にチェック
         if any(name in message for name in ["咲々木 花", "咲々木花", "咲々木", "花さん", "花ちゃん"]):
