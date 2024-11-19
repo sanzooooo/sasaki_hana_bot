@@ -377,15 +377,17 @@ class SakuragiPersonality:
         """メッセージに応じた画像メッセージを返す"""
         logger.info("Starting get_image_message method") 
         logger.info(f"Checking message: {message}")  # メッセージ内容を確認
-        if not any(word in message for word in ["おはよう", "お疲れ", "おつかれ"]):
-            logger.info("No matching keywords found")
-            return None
 
-        try: 
-            # 現在時刻を取得してフォルダを決定
+        try:
+            logger.info("Checking keywords...")
+            if not any(word in message for word in ["おはよう", "お疲れ", "おつかれ"]):
+                logger.info("No matching keywords found")
+                return None
+
+            logger.info("Keywords matched, proceeding with image generation")
             current_hour = datetime.now(JST).hour
             folder = "morning" if 5 <= current_hour < 17 else "evening"
-            logger.info(f"Generating image for folder: {folder}")
+            logger.info(f"Selected folder: {folder}")
             
             # ランダムに画像を選択
             image_number = random.randint(1, 16)
