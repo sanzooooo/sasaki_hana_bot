@@ -388,7 +388,7 @@ class SakuragiPersonality:
             
             # ランダムに画像を選択
             image_number = random.randint(1, 16)
-            image_path = f"{folder}/{folder}{image_number}.jpg"
+            image_path = f"{folder}:{image_number}.jpg"  # ここを修正
             logger.info(f"Selected image path: {image_path}")
             
             # Cloud Storageクライアントの初期化
