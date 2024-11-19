@@ -376,6 +376,7 @@ class SakuragiPersonality:
     def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
         """メッセージに応じた画像メッセージを返す"""
         logger.info("Starting get_image_message method") 
+        logger.info(f"Checking message: {message}")  # メッセージ内容を確認
         if not any(word in message for word in ["おはよう", "お疲れ", "おつかれ"]):
             logger.info("No matching keywords found")
             return None
@@ -483,10 +484,14 @@ class SakuragiPersonality:
         # テキストメッセージを生成
         text_response = self.get_text_response(user_id, user_message)
         messages.append(TextSendMessage(text=text_response))
+
+        # ここでログを追加
+        logger.info("Checking for image message...")
         
         # 画像メッセージがある場合は追加
         image_message = self.get_image_message(user_message)
         if image_message:
+            logger.info("Image message created")
             messages.append(image_message)
         
         return messages
