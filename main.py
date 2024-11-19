@@ -375,31 +375,39 @@ class SakuragiPersonality:
 
     def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
         """メッセージに応じた画像メッセージを返す"""
+        logger.info("Starting get_image_message method") 
         if not any(word in message for word in ["おはよう", "お疲れ", "おつかれ"]):
+            logger.info("No matching keywords found")
             return None
 
-        try:
+        try: 
             # 現在時刻を取得してフォルダを決定
             current_hour = datetime.now(JST).hour
             folder = "morning" if 5 <= current_hour < 17 else "evening"
+            logger.info(f"Generating image for folder: {folder}")
             
             # ランダムに画像を選択
             image_number = random.randint(1, 16)
             image_path = f"{folder}/{folder}{image_number}.jpg"
+            logger.info(f"Selected image path: {image_path}")
             
             # Cloud Storageクライアントの初期化
+            logger.info("Initializing Cloud Storage client")
             storage_client = storage.Client()
             bucket = storage_client.bucket(BUCKET_NAME)
             blob = bucket.blob(image_path)
             
-            # 署名付きURLを生成（15分有効）
+            # 署名付きURLを生成
+            logger.info("Generating signed URL")
             image_url = blob.generate_signed_url(
                 version="v4",
                 expiration=timedelta(minutes=15),
                 method="GET"
             )
+            logger.info(f"Generated URL: {image_url}")
             
             # 画像メッセージを作成
+            logger.info("Creating image message")
             return ImageSendMessage(
                 original_content_url=image_url,
                 preview_image_url=image_url
@@ -407,6 +415,7 @@ class SakuragiPersonality:
         
         except Exception as e:
             logger.error(f"Error generating image message: {str(e)}")
+            logger.error(f"Error details: {type(e).__name__}")
             return None
 
     
