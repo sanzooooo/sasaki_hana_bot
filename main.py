@@ -377,13 +377,11 @@ class SakuragiPersonality:
         """統合されたレスポンス生成メソッド"""
         messages = []
         logger.info("Starting response generation")
-        
-        # テキストメッセージを生成
+    
         text_response = self.get_text_response(user_id, user_message)
         messages.append(TextSendMessage(text=text_response))
         logger.info("Text message added")
-        
-        # 画像メッセージがある場合は追加
+    
         logger.info("Checking for image message...")
         image_message = self.get_image_message(user_message)
         if image_message:
@@ -391,10 +389,10 @@ class SakuragiPersonality:
             messages.append(image_message)
         else:
             logger.info("No image message created")
-            
+    
         logger.info(f"Final messages to send: {messages}")
         return messages
-
+        
     def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
         """メッセージに応じた画像メッセージを返す"""
         logger.info("Starting get_image_message method")
