@@ -487,20 +487,23 @@ class SakuragiPersonality:
     def get_appropriate_response(self, user_id: str, user_message: str) -> list:
         """統合されたレスポンス生成メソッド"""
         messages = []
+　　　　 logger.info("Starting response generation")
         
         # テキストメッセージを生成
         text_response = self.get_text_response(user_id, user_message)
         messages.append(TextSendMessage(text=text_response))
+        logger.info("Text message added")
 
-        # ここでログを追加
-        logger.info("Checking for image message...")
-        
         # 画像メッセージがある場合は追加
+        logger.info("Checking for image message...")
         image_message = self.get_image_message(user_message)
         if image_message:
-            logger.info("Image message created")
+            logger.info(f"Image message created: {image_message}")
             messages.append(image_message)
-        
+        else:
+            logger.info("No image message created") 
+
+        logger.info(f"Final messages to send: {messages}")
         return messages
 
     def get_chatgpt_response(self, user_id: str, user_message: str) -> Optional[str]:
@@ -587,8 +590,9 @@ def handle_message(event):
 
         # レスポンスの生成
         messages = sakuragi.get_appropriate_response(user_id, user_message)
+        logger.info(f"Attempting to send messages: {messages}")
         line_bot_api.reply_message(event.reply_token, messages)
-        logger.info(f"Sent response: {messages}")
+        logger.info("Messages sent successfully")
 
     except Exception as e:
         logger.error(f"Error in handle_message: {str(e)}", exc_info=True)
