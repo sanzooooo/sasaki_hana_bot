@@ -380,7 +380,12 @@ class SakuragiPersonality:
 
         try:
             logger.info("Checking keywords...")
-            if not any(word in message for word in ["おはよう", "お疲れ", "おつかれ"]):
+            keywords = ["おはよう", "お疲れ", "おつかれ"]
+            logger.info(f"Looking for keywords: {keywords}")
+            matched = any(word in message for word in keywords)
+            logger.info(f"Keyword match result: {matched}")  # 追加
+        
+            if not matched:
                 logger.info("No matching keywords found")
                 return None
 
