@@ -377,21 +377,29 @@ class SakuragiPersonality:
         """統合されたレスポンス生成メソッド"""
         messages = []
         logger.info("Starting response generation")
+
+        try:
+            text_response = self.get_text_response(user_id, user_message)
+            messages.append(TextSendMessage(text=text_response))
+            logger.info("Text message added")
     
-        text_response = self.get_text_response(user_id, user_message)
-        messages.append(TextSendMessage(text=text_response))
-        logger.info("Text message added")
+            logger.info("Attempting to get image message...")
+            image_message = self.get_image_message(user_message)
+            logger.info(f"Image message result: {image_message}")
+        
+            if image_message:
+                logger.info(f"Image message created: {image_message}")
+                messages.append(image_message)
+            else:
+                logger.info("No image message created")
     
-        logger.info("Checking for image message...")
-        image_message = self.get_image_message(user_message)
-        if image_message:
-            logger.info(f"Image message created: {image_message}")
-            messages.append(image_message)
-        else:
-            logger.info("No image message created")
-    
-        logger.info(f"Final messages to send: {messages}")
-        return messages
+            logger.info(f"Final messages to send: {messages}")
+            return messages
+
+        except Exception as e:
+            logger.error(f"Error in get_appropriate_response: {str(e)}")
+            logger.error(f"Error type: {type(e).__name__}")
+            return [TextSendMessage(text="申し訳ありません、エラーが発生しました")]
         
     def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
         """メッセージに応じた画像メッセージを返す"""
