@@ -373,22 +373,44 @@ class SakuragiPersonality:
         self.min_response_length = 20
         self.max_retry_attempts = 3
 
+    def get_appropriate_response(self, user_id: str, user_message: str) -> list:
+        """統合されたレスポンス生成メソッド"""
+        messages = []
+        logger.info("Starting response generation")
+        
+        # テキストメッセージを生成
+        text_response = self.get_text_response(user_id, user_message)
+        messages.append(TextSendMessage(text=text_response))
+        logger.info("Text message added")
+        
+        # 画像メッセージがある場合は追加
+        logger.info("Checking for image message...")
+        image_message = self.get_image_message(user_message)
+        if image_message:
+            logger.info(f"Image message created: {image_message}")
+            messages.append(image_message)
+        else:
+            logger.info("No image message created")
+            
+        logger.info(f"Final messages to send: {messages}")
+        return messages
+
     def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
         """メッセージに応じた画像メッセージを返す"""
-        logger.info("Starting get_image_message method") 
-        logger.info(f"Checking message: {message}")  # メッセージ内容を確認
-
+        logger.info("Starting get_image_message method")
+        logger.info(f"Checking message: {message}")
+        
         try:
             logger.info("Checking keywords...")
             keywords = ["おはよう", "お疲れ", "おつかれ"]
             logger.info(f"Looking for keywords: {keywords}")
             matched = any(word in message for word in keywords)
-            logger.info(f"Keyword match result: {matched}")  # 追加
-        
+            logger.info(f"Keyword match result: {matched}")
+            
             if not matched:
                 logger.info("No matching keywords found")
                 return None
-
+                
             logger.info("Keywords matched, proceeding with image generation")
             current_hour = datetime.now(JST).hour
             folder = "morning" if 5 <= current_hour < 17 else "evening"
@@ -396,12 +418,12 @@ class SakuragiPersonality:
             
             # ランダムに画像を選択
             image_number = random.randint(1, 16)
-            image_path = f"{folder}:{image_number}.jpg"  # ここを修正
+            image_path = f"{folder}:{image_number}.jpg"
             logger.info(f"Selected image path: {image_path}")
             
             # Cloud Storageクライアントの初期化
             logger.info("Initializing Cloud Storage client")
-            storage_client = storage.Client(project='sasaki-hana-bot')  # 変更箇所
+            storage_client = storage.Client(project='sasaki-hana-bot')
             bucket = storage_client.bucket(BUCKET_NAME)
             blob = bucket.blob(image_path)
             
@@ -420,7 +442,7 @@ class SakuragiPersonality:
                 original_content_url=image_url,
                 preview_image_url=image_url
             )
-        
+            
         except Exception as e:
             logger.error(f"Error generating image message: {str(e)}")
             logger.error(f"Error details: {type(e).__name__}")
@@ -487,7 +509,7 @@ class SakuragiPersonality:
     def get_appropriate_response(self, user_id: str, user_message: str) -> list:
         """統合されたレスポンス生成メソッド"""
         messages = []
-　　　　 logger.info("Starting response generation")
+        logger.info("Starting response generation")
         
         # テキストメッセージを生成
         text_response = self.get_text_response(user_id, user_message)
