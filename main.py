@@ -401,7 +401,7 @@ class SakuragiPersonality:
             
             # Cloud Storageクライアントの初期化
             logger.info("Initializing Cloud Storage client")
-            storage_client = storage.Client()
+            storage_client = storage.Client(project='sasaki-hana-bot')  # 変更箇所
             bucket = storage_client.bucket(BUCKET_NAME)
             blob = bucket.blob(image_path)
             
