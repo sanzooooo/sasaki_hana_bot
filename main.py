@@ -12,7 +12,6 @@ from datetime import datetime, timezone, timedelta
 from google.cloud import storage
 import logging
 import google.auth
-from google.oauth2 import service_account
 
 # 環境変数の設定
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'key.json'
@@ -432,10 +431,9 @@ class SakuragiPersonality:
             # Cloud Storageクライアントの初期化部分を修正
             logger.info("Initializing Cloud Storage client")
             try:
-                from google.oauth2 import service_account
-                credentials = service_account.Credentials.from_compute_engine()
-                storage_client = storage.Client(credentials=credentials, project='sasaki-hana-bot')
-                logger.info("Storage client initialized with compute engine credentials")
+                credentials, project = google.auth.default()
+                storage_client = storage.Client(credentials=credentials, project=project)
+                logger.info("Storage client initialized with default credentials")
                 bucket = storage_client.bucket(BUCKET_NAME)
                 blob = bucket.blob(image_path)
             except Exception as e:
