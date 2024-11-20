@@ -11,6 +11,7 @@ from typing import Optional, Dict
 from datetime import datetime, timezone, timedelta
 from google.cloud import storage
 import logging
+import google.auth
 
 # 環境変数の設定
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'key.json'
@@ -430,19 +431,14 @@ class SakuragiPersonality:
             # Cloud Storageクライアントの初期化部分を修正
             logger.info("Initializing Cloud Storage client")
             try:
-                storage_client = storage.Client()
-                logger.info("Storage client initialized without key file")
+                credentials, project = google.auth.default()
+                storage_client = storage.Client(credentials=credentials, project=project)
+                logger.info("Storage client initialized with default credentials")
+                bucket = storage_client.bucket(BUCKET_NAME)
+                blob = bucket.blob(image_path)
             except Exception as e:
-                try:
-                    # プロジェクトIDを明示的に指定
-                    storage_client = storage.Client(project='sasaki-hana-bot')
-                    logger.info("Storage client initialized with project ID")
-                except Exception as e:
-                    logger.error(f"Failed to initialize storage client: {str(e)}")
-                    return None
-
-            bucket = storage_client.bucket(BUCKET_NAME)
-            blob = bucket.blob(image_path)
+                logger.error(f"Failed to initialize storage client with default credentials: {str(e)}")
+                return None
             
             # 署名付きURLを生成
             logger.info("Generating signed URL")
