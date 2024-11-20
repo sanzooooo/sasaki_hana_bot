@@ -427,14 +427,22 @@ class SakuragiPersonality:
             image_path = f"{folder}/{folder}{image_number}.jpg"  # 修正
             logger.info(f"Selected image path: {image_path}")
             
-            # Cloud Storageクライアントの初期化
+            # Cloud Storageクライアントの初期化部分を修正
             logger.info("Initializing Cloud Storage client")
-            storage_client = storage.Client(project='sasaki-hana-bot')
-            logger.info("Storage client initialized")
+            try:
+                storage_client = storage.Client()
+                logger.info("Storage client initialized without key file")
+            except Exception as e:
+                try:
+                    # プロジェクトIDを明示的に指定
+                    storage_client = storage.Client(project='sasaki-hana-bot')
+                    logger.info("Storage client initialized with project ID")
+                except Exception as e:
+                    logger.error(f"Failed to initialize storage client: {str(e)}")
+                    return None
+
             bucket = storage_client.bucket(BUCKET_NAME)
-            logger.info(f"Getting bucket: {BUCKET_NAME}")
             blob = bucket.blob(image_path)
-            logger.info(f"Got blob: {image_path}")
             
             # 署名付きURLを生成
             logger.info("Generating signed URL")
