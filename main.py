@@ -164,73 +164,31 @@ class SakuragiPersonality:
         ]
         return random.choice(error_messages)
 
-    def initialize_storage_client(self):
-        try:
-            logger.info("Attempting to initialize storage client with Workload Identity")
-            storage_client = storage.Client(project='sasaki-hana-bot')
-            logger.info("Successfully created storage client")
-            return storage_client
-        except Exception as e:
-            logger.error(f"Storage client initialization failed: {str(e)}")
-            logger.error(f"Error type: {type(e).__name__}")
-            logger.error("Error details:", exc_info=True)
-            return None
-
     def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
-        """メッセージに応じた画像メッセージを返す"""
-        logger.info("====== Image Message Debug Start ======")
-        logger.info(f"Input message: {message}")
-    
         try:
             # キーワードチェック
             keywords = ["おはよう", "お疲れ", "おつかれ"]
-            matched = any(word in message for word in keywords)
-            logger.info(f"Keyword match: {matched}")
-            
-            if not matched:
-                logger.info("No keywords matched - returning None")
+            if not any(word in message for word in keywords):
                 return None
                 
             # 時間とパス設定
             current_hour = datetime.now(JST).hour
             prefix = "morning" if 5 <= current_hour < 17 else "evening"
             image_number = random.randint(1, 16)
-            image_path = f"{prefix}_{image_number}.jpg"
-            logger.info(f"Selected path: {image_path}")
             
-            # Storage Client初期化
-            storage_client = self.initialize_storage_client()
-            if not storage_client:
-                return None
-            logger.info("Storage client initialized")
+            # 直接URLを構築
+            base_url = "https://storage.googleapis.com/sasaki-images-bot"
+            image_url = f"{base_url}/{prefix}_{image_number}.jpg"
+            logger.info(f"Generated URL: {image_url}")
             
-            # バケット取得
-            bucket = storage_client.bucket(BUCKET_NAME)
-            logger.info(f"Bucket accessed: {BUCKET_NAME}")
-            
-            # Blob取得と存在確認
-            blob = bucket.blob(image_path)
-            if not blob.exists():
-                logger.error(f"Image not found: {image_path}")
-                return None
-            logger.info("Blob exists and is accessible")
-            
-            # URL生成（1時間有効）
-            image_url = blob.generate_signed_url(
-                version="v4",
-                expiration=timedelta(hours=1),
-                method="GET"
-            )
-            logger.info(f"Generated URL (truncated): {image_url[:50]}...")
-            
-            # メッセージ作成
-            image_message = ImageSendMessage(
+            return ImageSendMessage(
                 original_content_url=image_url,
                 preview_image_url=image_url
             )
-            logger.info("Image message created successfully")
             
-            return image_message
+        except Exception as e:
+            logger.error(f"Error in get_image_message: {str(e)}")
+            return None
             
         except Exception as e:
             logger.error(f"Error in get_image_message: {str(e)}")
