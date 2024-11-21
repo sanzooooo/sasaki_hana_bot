@@ -402,7 +402,7 @@ def handle_message(event):
             TextSendMessage(text=error_response)
         )
 # sakuragiのインスタンス化
-    sakuragi = SakuragiPersonality()
+sakuragi = SakuragiPersonality()
 
 # Flaskアプリケーションのメイン処理
 if __name__ == "__main__":
