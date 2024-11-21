@@ -401,13 +401,11 @@ def handle_message(event):
             event.reply_token,
             TextSendMessage(text=error_response)
         )
-
+# sakuragiのインスタンス化
+    sakuragi = SakuragiPersonality()
 
 # Flaskアプリケーションのメイン処理
 if __name__ == "__main__":
-    # sakuragiのインスタンス化
-    sakuragi = SakuragiPersonality()
-    
     # ポート設定
     port = int(os.getenv("PORT", 8080))
     
