@@ -166,10 +166,14 @@ class SakuragiPersonality:
 
     def initialize_storage_client(self):
         try:
+            logger.info("Attempting to initialize storage client without explicit credentials")
             storage_client = storage.Client()
+            logger.info("Successfully created storage client")
             return storage_client
         except Exception as e:
-            logger.error(f"Failed to initialize storage client: {str(e)}")
+            logger.error(f"Storage client initialization failed: {str(e)}")
+            logger.error(f"Error type: {type(e).__name__}")
+            logger.error("Error details:", exc_info=True)
             return None
 
     def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
