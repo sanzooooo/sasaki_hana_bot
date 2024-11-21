@@ -164,7 +164,7 @@ class SakuragiPersonality:
         ]
         return random.choice(error_messages)
 
-def initialize_storage_client(self):
+    def initialize_storage_client(self):
         """Google Cloud Storageクライアントの初期化"""
         try:
             credentials, project = google.auth.default()
