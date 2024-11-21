@@ -166,8 +166,8 @@ class SakuragiPersonality:
 
     def initialize_storage_client(self):
         try:
-            logger.info("Attempting to initialize storage client without explicit credentials")
-            storage_client = storage.Client()
+            logger.info("Attempting to initialize storage client with Workload Identity")
+            storage_client = storage.Client(project='sasaki-hana-bot')
             logger.info("Successfully created storage client")
             return storage_client
         except Exception as e:
