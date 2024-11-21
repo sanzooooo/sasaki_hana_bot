@@ -167,19 +167,15 @@ class SakuragiPersonality:
     def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
         try:
             # キーワードチェック
-            keywords = ["おはよう", "お疲れ", "おつかれ"]
-            if not any(word in message for word in keywords):
-                return None
+            if "おはよう" in message:
+                folder = "morning"
+            elif "お疲れ" in message or "おつかれ" in message:
+                folder = "evening"
                 
-            # 時間とパス設定
-            current_hour = datetime.now(JST).hour
-            prefix = "morning" if 5 <= current_hour < 17 else "evening"
             image_number = random.randint(1, 16)
-            
-            # 直接URLを構築 - フォルダ構造を含める
             base_url = "https://storage.googleapis.com/sasaki-images-bot"
-            image_url = f"{base_url}/{prefix}/{prefix}_{image_number}.jpg"
-            logger.info(f"Generated URL: {image_url}")
+            image_url = f"{base_url}/{folder}/{folder}_{image_number}.jpg"
+            logger.info(f"Message: {message}, Selected folder: {folder}")
             
             return ImageSendMessage(
                 original_content_url=image_url,
