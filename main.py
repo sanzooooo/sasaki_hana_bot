@@ -431,26 +431,27 @@ class SakuragiPersonality:
             # Cloud Storageクライアントの初期化部分
             logger.info("Initializing Cloud Storage client")
             try:
+                from google.cloud import storage
                 storage_client = storage.Client()
-                logger.info("Storage client initialized directly")
-                bucket = storage_client.get_bucket(BUCKET_NAME)
-                blob = bucket.get_blob(image_path)
-                if not blob:
-                    logger.error(f"Blob not found: {image_path}")
+                bucket = storage_client.bucket(BUCKET_NAME)
+                blob = bucket.blob(image_path)
+                if not blob.exists():
+                    logger.error(f"Blob does not exist: {image_path}")
                     return None
+                
+                # 署名付きURLを生成
+                logger.info("Generating signed URL")
+                image_url = blob.generate_signed_url(
+                    version="v4",
+                    expiration=timedelta(minutes=15),
+                    method="GET"
+                )
+                logger.info(f"Generated URL: {image_url}")
+
             except Exception as e:
                 logger.error(f"Failed to initialize storage client: {str(e)}")
                 logger.error(f"Error type: {type(e).__name__}")
                 return None
-            
-            # 署名付きURLを生成
-            logger.info("Generating signed URL")
-            image_url = blob.generate_signed_url(
-                version="v4",
-                expiration=timedelta(minutes=15),
-                method="GET"
-            )
-            logger.info(f"Generated URL: {image_url}")
             
             # 画像メッセージを作成
             logger.info("Creating image message")
