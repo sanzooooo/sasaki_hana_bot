@@ -13,9 +13,6 @@ from google.cloud import storage
 import logging
 import google.auth
 
-# 環境変数の設定
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'key.json'
-
 # ログ設定
 logging.basicConfig(
     level=logging.INFO,
@@ -431,7 +428,6 @@ class SakuragiPersonality:
             # Cloud Storageクライアントの初期化部分
             logger.info("Initializing Cloud Storage client")
             try:
-                from google.cloud import storage
                 storage_client = storage.Client()
                 bucket = storage_client.bucket(BUCKET_NAME)
                 blob = bucket.blob(image_path)
