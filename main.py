@@ -428,16 +428,19 @@ class SakuragiPersonality:
             image_path = f"{folder}:{image_number}.jpg"  # スラッシュ(/)ではなくコロン(:)を使用
             logger.info(f"Selected image path: {image_path}")
             
-            # Cloud Storageクライアントの初期化部分を修正
+            # Cloud Storageクライアントの初期化部分
             logger.info("Initializing Cloud Storage client")
             try:
-                credentials, project = google.auth.default()
-                storage_client = storage.Client(credentials=credentials, project=project)
-                logger.info("Storage client initialized with default credentials")
-                bucket = storage_client.bucket(BUCKET_NAME)
-                blob = bucket.blob(image_path)
+                storage_client = storage.Client()
+                logger.info("Storage client initialized directly")
+                bucket = storage_client.get_bucket(BUCKET_NAME)
+                blob = bucket.get_blob(image_path)
+                if not blob:
+                    logger.error(f"Blob not found: {image_path}")
+                    return None
             except Exception as e:
                 logger.error(f"Failed to initialize storage client: {str(e)}")
+                logger.error(f"Error type: {type(e).__name__}")
                 return None
             
             # 署名付きURLを生成
