@@ -176,19 +176,15 @@ class SakuragiPersonality:
             prefix = "morning" if 5 <= current_hour < 17 else "evening"
             image_number = random.randint(1, 16)
             
-            # 直接URLを構築
+            # 直接URLを構築 - フォルダ構造を含める
             base_url = "https://storage.googleapis.com/sasaki-images-bot"
-            image_url = f"{base_url}/{prefix}_{image_number}.jpg"
+            image_url = f"{base_url}/{prefix}/{prefix}_{image_number}.jpg"
             logger.info(f"Generated URL: {image_url}")
             
             return ImageSendMessage(
                 original_content_url=image_url,
                 preview_image_url=image_url
             )
-            
-        except Exception as e:
-            logger.error(f"Error in get_image_message: {str(e)}")
-            return None
             
         except Exception as e:
             logger.error(f"Error in get_image_message: {str(e)}")
