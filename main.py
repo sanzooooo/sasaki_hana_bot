@@ -165,15 +165,11 @@ class SakuragiPersonality:
         return random.choice(error_messages)
 
     def initialize_storage_client(self):
-        """Google Cloud Storageクライアントの初期化"""
         try:
-            credentials, project = google.auth.default()
-            storage_client = storage.Client(credentials=credentials)
-            logger.info(f"Successfully initialized storage client with project: {project}")
+            storage_client = storage.Client()
             return storage_client
         except Exception as e:
             logger.error(f"Failed to initialize storage client: {str(e)}")
-            logger.error(f"Error type: {type(e).__name__}")
             return None
 
     def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
@@ -193,9 +189,9 @@ class SakuragiPersonality:
                 
             # 時間とパス設定
             current_hour = datetime.now(JST).hour
-            folder = "morning" if 5 <= current_hour < 17 else "evening"
+            prefix = "morning" if 5 <= current_hour < 17 else "evening"
             image_number = random.randint(1, 16)
-            image_path = f"{folder}/{image_number}.jpg"
+            image_path = f"{prefix}_{image_number}.jpg"
             logger.info(f"Selected path: {image_path}")
             
             # Storage Client初期化
