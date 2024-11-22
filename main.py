@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 import random
 from openai import OpenAI
 import time
-from typing import Optional, Dict
 from datetime import datetime, timezone, timedelta
 from google.cloud import storage
 import logging
