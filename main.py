@@ -161,11 +161,11 @@ class ImageMessageHandler:
         self.image_configs = {
             "morning": ImageConfig(
                 folder="morning",
-                keywords=["おはよう", "モーニング", "起きた"],
+                keywords=["おはよう", "モーニング", "起きた", "おは", "おはよ", "おそよう", "ぐっもーにん", "グッドモーニング", "good morning", "morning", "お早う", "おはー", "起床"],
             ),
             "evening": ImageConfig(
                 folder="evening",
-                keywords=["お疲れ", "おつかれ", "疲れた", "帰宅"],
+                keywords=["お疲れ", "おつかれ", "疲れた", "帰宅", "おつ", "おつれさん", "お疲れ様", "お疲れです", "おつかれさま", "おつかれさん", "お仕事お疲れ", "つかれた"],
             )
         }
         
