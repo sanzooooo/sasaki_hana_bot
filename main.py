@@ -220,9 +220,9 @@ class SakuragiPersonality:
             "ごめんなさい、今うまく話せないの...😥 また後でね！"
         ]
         return random.choice(error_messages)
-
+        
     def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
-    return self.image_handler.get_image_message(message)
+        return self.image_handler.get_image_message(message)
 
     def get_text_response(self, user_id: str, message: str) -> str:
         logger.info(f"Processing message: {message}")
