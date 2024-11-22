@@ -12,6 +12,7 @@ from datetime import datetime, timezone, timedelta
 from google.cloud import storage
 import logging
 import google.auth
+from typing import Optional, Dict, List
 
 # ログ設定
 logging.basicConfig(
