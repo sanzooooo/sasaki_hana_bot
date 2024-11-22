@@ -146,6 +146,62 @@ system_prompt = """あなたは「咲々木 花」として振る舞ってくだ
     - 感謝の言葉を自然に織り交ぜる
     - 時には「うん！」「そうなの！」などの短い返答も""".format(**URLS)
 
+from dataclasses import dataclass
+
+@dataclass
+class ImageConfig:
+    folder: str
+    keywords: List[str]
+    min_num: int = 1
+    max_num: int = 16
+
+class ImageMessageHandler:
+    def __init__(self):
+        self.base_url = "https://storage.googleapis.com/sasaki-images-bot"
+        self.image_configs = {
+            "morning": ImageConfig(
+                folder="morning",
+                keywords=["おはよう", "モーニング", "起きた"],
+            ),
+            "evening": ImageConfig(
+                folder="evening",
+                keywords=["お疲れ", "おつかれ", "疲れた", "帰宅"],
+            )
+        }
+        
+        self.logger = logging.getLogger(__name__)
+
+    def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
+        try:
+            # メッセージから適切な画像設定を取得
+            image_config = self._get_matching_config(message)
+            if not image_config:
+                return None
+                
+            # 画像URLの生成
+            image_url = self._generate_image_url(image_config)
+            
+            return ImageSendMessage(
+                original_content_url=image_url,
+                preview_image_url=image_url
+            )
+            
+        except Exception as e:
+            self.logger.error(f"画像メッセージ生成エラー: {str(e)}")
+            return None
+            
+    def _get_matching_config(self, message: str) -> Optional[ImageConfig]:
+        """メッセージに一致する画像設定を返す"""
+        for config in self.image_configs.values():
+            if any(keyword in message for keyword in config.keywords):
+                return config
+        return None
+        
+    def _generate_image_url(self, config: ImageConfig) -> str:
+        """画像URLを生成"""
+        image_number = random.randint(config.min_num, config.max_num)
+        return f"{self.base_url}/{config.folder}/{config.folder}_{image_number}.jpg"
+
 class SakuragiPersonality:
     def __init__(self):
         self.last_flower_happy = {}
@@ -153,6 +209,7 @@ class SakuragiPersonality:
         self.user_states = {}
         self.min_response_length = 20
         self.max_retry_attempts = 3
+        self.image_handler = ImageMessageHandler()
 
     def handle_error(self, error: Exception) -> str:
         """エラーハンドリング"""
@@ -165,30 +222,7 @@ class SakuragiPersonality:
         return random.choice(error_messages)
 
     def get_image_message(self, message: str) -> Optional[ImageSendMessage]:
-        try:
-            # キーワードチェック
-            if "おはよう" in message:
-                folder = "morning"
-            elif "お疲れ" in message or "おつかれ" in message:
-                folder = "evening"
-                
-            image_number = random.randint(1, 16)
-            base_url = "https://storage.googleapis.com/sasaki-images-bot"
-            image_url = f"{base_url}/{folder}/{folder}_{image_number}.jpg"
-            logger.info(f"Message: {message}, Selected folder: {folder}")
-            
-            return ImageSendMessage(
-                original_content_url=image_url,
-                preview_image_url=image_url
-            )
-            
-        except Exception as e:
-            logger.error(f"Error in get_image_message: {str(e)}")
-            logger.error(f"Error type: {type(e).__name__}")
-            logger.error("Error traceback:", exc_info=True)
-            return None
-        finally:
-            logger.info("====== Image Message Debug End ======")
+    return self.image_handler.get_image_message(message)
 
     def get_text_response(self, user_id: str, message: str) -> str:
         logger.info(f"Processing message: {message}")
