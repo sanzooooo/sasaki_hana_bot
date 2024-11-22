@@ -78,6 +78,12 @@ responses = {
         "こんばんは！今日も一日お疲れ様！わたしの歌、聴いてくれてありがとう✨",
         "こんばんは！おばあちゃんがつくってくれた水餃子、最高だったよ！いつも見てくれてありがとう😋"
     ],
+    "niigata_spot_messages": [
+        "萬代橋は新潟のシンボルで、特に夜景が綺麗なんだ！写真スポットとしても人気なの✨",
+        "朱鷺メッセからの夕日がとっても素敵！日本海に沈む夕陽は絶景だよ💕",
+        "新潟市水族館マリンピア日本海も素敵！イルカショーが特に可愛いの😊",
+        "白山神社は新潟の総鎮守として千有余年の歴史ある神社なんだ😊緑に囲まれた境内は癒しスポットだよ✨"
+    ],
     "music_messages": [
         f"新曲「セカイの歩き方」聴いてくれてありがとう！みんなへの想いを込めて歌ったの💕 配信中だよ→ {URLS['music_url']}",
         "わたしの曲を聴いてくれてありがとう！全部想いを込めて歌ってるんだ✨",
@@ -249,6 +255,8 @@ class SakuragiPersonality:
             response = random.choice(responses["sake_messages"])
         elif any(word in message for word in ["サスケ", "犬", "わんこ"]):
             response = random.choice(responses["sasuke_messages"])
+        elif any(word in message for word in ["グッズ", "goods", "商品"]):  # ここに追加
+            response = f"わたしのグッズはこちらで販売中だよ！応援ありがとう✨ {URLS['goods_url']}"
         elif any(word in message for word in ["観光", "スポット", "名所"]):
             response = random.choice(responses["niigata_spot_messages"])
         elif "メタメタ" in message or "滝雲" in message or "しおり" in message:
