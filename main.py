@@ -44,6 +44,9 @@ ALLOWED_USERS = [
     "Ubbe386d578937e92762dcff67e69cb02",
     "U240a18dfddb196c0a5c90eacabb3f6c3",
     "U923794a8bbfe8644a644386321c3fbe1",
+    "U5ef24618a282787771bd2a35e720b1c7",
+    "Ue1f0cff7b9c178c1025a301d716bafaa",
+    "Ufea171b9c0b7bbe2f2b489369b795627",
     "U1cce76e67021ec40b638d933fd7790da"
 ]
 
