@@ -39,21 +39,6 @@ ADMIN_ID = [
 
 ALLOWED_USERS = [
     "U0cf263ba9e075fcac42d60e20bd950c3",
-    "U843f1d83e5290eb9d12214439d8b0c31",
-    "Ua62b7e55c4b79d07b0644dd2da212b0d",
-    "Ubbe386d578937e92762dcff67e69cb02",
-    "U240a18dfddb196c0a5c90eacabb3f6c3",
-    "U923794a8bbfe8644a644386321c3fbe1",
-    "U5ef24618a282787771bd2a35e720b1c7",
-    "Ue1f0cff7b9c178c1025a301d716bafaa",
-    "Ufea171b9c0b7bbe2f2b489369b795627",
-    "U37b3360b57856989ff331c56b3fd1eef",
-    "Ub44ladc073ae3d4aeb44cf897a62f1b6",
-    "U7c5d7d048610537199b98e54be0ceadd",
-    "U39880f6808be8dc3cab4346f4b5c381a",
-    "U3f6ac430a8894e426934d2d606d33fed",
-    "U6dc35910e735b0cd245d7b9eb6317443",
-    "U1abef1f73b96aec67e7c3f4d17db414f",
     "U1cce76e67021ec40b638d933fd7790da"
 ]
 
