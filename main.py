@@ -437,9 +437,10 @@ class UserConversation:
 
 @app.route("/callback", methods=['POST'])
 def callback():
-    """LINE Webhookからのコールバック処理"""
+    logger.info("Webhook received!")  # 追加
     signature = request.headers['X-Line-Signature']
     body = request.get_data(as_text=True)
+    logger.info(f"Request body: {body}")  # 追加
     try:
         handler.handle(body, signature)
     except InvalidSignatureError:
