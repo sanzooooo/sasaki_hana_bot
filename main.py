@@ -199,6 +199,11 @@ system_prompt = """あなたは「咲々木 花」として振る舞ってくだ
 from dataclasses import dataclass
 
 @dataclass
+class Message:
+    content: str
+    timestamp: datetime
+    is_bot: bool
+    
 class ImageConfig:
     folder: str
     keywords: List[str]
@@ -260,6 +265,22 @@ class SakuragiPersonality:
         self.min_response_length = 20
         self.max_retry_attempts = 3
         self.image_handler = ImageMessageHandler()
+        self.conversation_manager = ConversationManager()
+
+    def get_appropriate_response(self, user_id: str, user_message: str) -> list:
+        messages = []
+        logger.info("Starting response generation")
+        try:
+            text_response = self.get_text_response(user_id, user_message)
+            messages.append(TextSendMessage(text=text_response))
+            image_message = self.get_image_message(user_message)
+            if image_message:
+                messages.append(image_message)
+            
+            return messages
+        except Exception as e:
+            logger.error(f"Error in get_appropriate_response: {str(e)}")
+            return [TextSendMessage(text="申し訳ありません、エラーが発生しました")]
 
     def handle_error(self, error: Exception) -> str:
         """エラーハンドリング"""
@@ -275,7 +296,10 @@ class SakuragiPersonality:
         return self.image_handler.get_image_message(message)
 
     def get_text_response(self, user_id: str, message: str) -> str:
-        logger.info(f"Processing message: {message}")
+        conversation = self.conversation_manager.get_user_conversation(user_id)
+        # メッセージを履歴に追加
+        conversation.add_message(message, is_bot=False)
+
         response = ""
         
         # 名前の呼び方を最初にチェック
@@ -337,55 +361,79 @@ class SakuragiPersonality:
         return None
 
     def get_chatgpt_response(self, user_id: str, user_message: str) -> Optional[str]:
-        """ChatGPTを使用した応答の生成"""
         try:
+            conversation = self.conversation_manager.get_user_conversation(user_id)
+            # 現在のメッセージを履歴に追加
+            conversation.chat_history.append({"role": "user", "content": user_message})
+        
             client = OpenAI(
                 api_key=os.getenv('OPENAI_API_KEY'),
                 timeout=20.0
             )
-            
+        
             response = client.chat.completions.create(
                 model="gpt-4-1106-preview",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_message}
-                ],
+                messages=conversation.chat_history,  # 全履歴を送信
                 temperature=0.7,
                 max_tokens=250
             )
-            
-            return response.choices[0].message.content
+        
+            bot_response = response.choices[0].message.content
+            # ボットの応答も履歴に追加
+            conversation.chat_history.append({"role": "assistant", "content": bot_response})
+        
+            return bot_response
         except Exception as e:
             logger.error(f"ChatGPT error: {str(e)}")
             return None
 
-    def get_appropriate_response(self, user_id: str, user_message: str) -> list:
-        """統合されたレスポンス生成メソッド"""
-        messages = []
-        logger.info("Starting response generation")
-        
-        try:
-            text_response = self.get_text_response(user_id, user_message)
-            messages.append(TextSendMessage(text=text_response))
-            logger.info("Text message added")
+class ConversationManager:
+    def __init__(self):
+        self.conversations = {}
     
-            logger.info("Attempting to get image message...")
-            image_message = self.get_image_message(user_message)
-            logger.info(f"Image message result: {image_message}")
+    def get_user_conversation(self, user_id: str) -> UserConversation:
+        if user_id not in self.conversations:
+            self.conversations[user_id] = UserConversation(user_id)
+        return self.conversations[user_id]
+            
+class UserConversation:
+    def __init__(self, user_id: str):
+        self.user_id = user_id
+        self.messages = []
+        self.last_topic = None
+        self.conversation_active = False
+        # 会話履歴を保持する配列を追加
+        self.chat_history = [
+            {"role": "system", "content": system_prompt}
+        ]
         
-            if image_message:
-                logger.info(f"Image message created: {image_message}")
-                messages.append(image_message)
-            else:
-                logger.info("No image message created")
+    def add_message(self, content: str, is_bot: bool):
+        now = datetime.now()
+        self.messages.append(Message(content, now, is_bot))
+        # chat_historyにも追加
+        role = "assistant" if is_bot else "user"
+        self.chat_history.append({"role": role, "content": content})
+        # 履歴が長すぎる場合は古いものを削除（システムメッセージは保持）
+        if len(self.chat_history) > 10:  # 直近5往復分を保持
+            self.chat_history = [self.chat_history[0]] + self.chat_history[-9:]
+        
+        # 既存の機能を呼び出し
+        self._cleanup_old_messages()
+        self._check_conversation_state()
     
-            logger.info(f"Final messages to send: {messages}")
-            return messages
-
-        except Exception as e:
-            logger.error(f"Error in get_appropriate_response: {str(e)}")
-            logger.error(f"Error type: {type(e).__name__}")
-            return [TextSendMessage(text="申し訳ありません、エラーが発生しました")]
+    def _cleanup_old_messages(self):
+        cutoff = datetime.now() - timedelta(hours=24)
+        self.messages = [msg for msg in self.messages 
+                        if msg.timestamp > cutoff]
+    
+    def _check_conversation_state(self):
+        if not self.messages:
+            return
+        last_message = self.messages[-1]
+        if (datetime.now() - last_message.timestamp) > timedelta(minutes=5):
+            self.conversation_active = False
+        else:
+            self.conversation_active = True
 
 @app.route("/callback", methods=['POST'])
 def callback():
