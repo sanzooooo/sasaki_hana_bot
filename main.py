@@ -163,7 +163,7 @@ responses = {
     "niigata_love_messages": [
         "新潟の素晴らしさを伝えられて嬉しいな！わたしも新潟のことが大好きなの✨",
         "古町も万代も素敵な場所だよね！新潟の街並みって本当に魅力的なんだ💕",
-        "新潟の魅力って語り始めたら止まらないの！それだけ素敵な場所なんだ😊"
+        "新潟の魅力って語り始めたら止まらないの！それだけ素敵な場所なんだ😊",
         "新潟の四季折々の景色が大好き！特に日本海の夕陽は世界一だと思うの✨",
         "新潟の食文化って本当に豊かだよね！お米も魚も野菜も最高なの💕",
         "新潟の人の温かさも大好き！おもてなしの心を大切にする県民性が誇りなんだ😊"
@@ -203,12 +203,61 @@ class Message:
     content: str
     timestamp: datetime
     is_bot: bool
-    
+
+@dataclass
 class ImageConfig:
     folder: str
     keywords: List[str]
     min_num: int = 1
     max_num: int = 16
+            
+class UserConversation:
+    def __init__(self, user_id: str):
+        self.user_id = user_id
+        self.messages = []
+        self.last_topic = None
+        self.conversation_active = False
+        # 会話履歴を保持する配列を追加
+        self.chat_history = [
+            {"role": "system", "content": system_prompt}
+        ]
+        
+    def add_message(self, content: str, is_bot: bool):
+        now = datetime.now()
+        self.messages.append(Message(content, now, is_bot))
+        # chat_historyにも追加
+        role = "assistant" if is_bot else "user"
+        self.chat_history.append({"role": role, "content": content})
+        # 履歴が長すぎる場合は古いものを削除（システムメッセージは保持）
+        if len(self.chat_history) > 10:  # 直近5往復分を保持
+            self.chat_history = [self.chat_history[0]] + self.chat_history[-9:]
+        
+        # 既存の機能を呼び出し
+        self._cleanup_old_messages()
+        self._check_conversation_state()
+    
+    def _cleanup_old_messages(self):
+        cutoff = datetime.now() - timedelta(hours=24)
+        self.messages = [msg for msg in self.messages 
+                        if msg.timestamp > cutoff]
+    
+    def _check_conversation_state(self):
+        if not self.messages:
+            return
+        last_message = self.messages[-1]
+        if (datetime.now() - last_message.timestamp) > timedelta(minutes=5):
+            self.conversation_active = False
+        else:
+            self.conversation_active = True
+
+class ConversationManager:
+    def __init__(self):
+        self.conversations = {}
+    
+    def get_user_conversation(self, user_id: str) -> UserConversation:
+        if user_id not in self.conversations:
+            self.conversations[user_id] = UserConversation(user_id)
+        return self.conversations[user_id]
 
 class ImageMessageHandler:
     def __init__(self):
@@ -386,54 +435,6 @@ class SakuragiPersonality:
         except Exception as e:
             logger.error(f"ChatGPT error: {str(e)}")
             return None
-
-class ConversationManager:
-    def __init__(self):
-        self.conversations = {}
-    
-    def get_user_conversation(self, user_id: str) -> UserConversation:
-        if user_id not in self.conversations:
-            self.conversations[user_id] = UserConversation(user_id)
-        return self.conversations[user_id]
-            
-class UserConversation:
-    def __init__(self, user_id: str):
-        self.user_id = user_id
-        self.messages = []
-        self.last_topic = None
-        self.conversation_active = False
-        # 会話履歴を保持する配列を追加
-        self.chat_history = [
-            {"role": "system", "content": system_prompt}
-        ]
-        
-    def add_message(self, content: str, is_bot: bool):
-        now = datetime.now()
-        self.messages.append(Message(content, now, is_bot))
-        # chat_historyにも追加
-        role = "assistant" if is_bot else "user"
-        self.chat_history.append({"role": role, "content": content})
-        # 履歴が長すぎる場合は古いものを削除（システムメッセージは保持）
-        if len(self.chat_history) > 10:  # 直近5往復分を保持
-            self.chat_history = [self.chat_history[0]] + self.chat_history[-9:]
-        
-        # 既存の機能を呼び出し
-        self._cleanup_old_messages()
-        self._check_conversation_state()
-    
-    def _cleanup_old_messages(self):
-        cutoff = datetime.now() - timedelta(hours=24)
-        self.messages = [msg for msg in self.messages 
-                        if msg.timestamp > cutoff]
-    
-    def _check_conversation_state(self):
-        if not self.messages:
-            return
-        last_message = self.messages[-1]
-        if (datetime.now() - last_message.timestamp) > timedelta(minutes=5):
-            self.conversation_active = False
-        else:
-            self.conversation_active = True
 
 @app.route("/callback", methods=['POST'])
 def callback():
