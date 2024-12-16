@@ -424,7 +424,7 @@ class SakuragiPersonality:
                 model="gpt-4-1106-preview",
                 messages=conversation.chat_history,  # 全履歴を送信
                 temperature=0.7,
-                max_tokens=250
+                max_tokens=1000
             )
         
             bot_response = response.choices[0].message.content
