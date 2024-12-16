@@ -371,14 +371,19 @@ class SakuragiPersonality:
         elif any(word in message for word in ["お酒", "日本酒", "地酒"]):
             response = random.choice(responses["sake_messages"])
         elif any(word in message for word in ["サスケ", "犬", "わんこ"]):
-            response = random.choice(responses["sasuke_messages"])
+            if "何歳" in message:
+                response = "サスケは10歳なの！中学生の時から一緒に暮らしてるんだ✨"
+            else:
+                response = random.choice(responses["sasuke_messages"])
         elif any(word in message for word in ["グッズ", "goods", "商品"]):  # ここに追加
             response = f"わたしのグッズはこちらで販売中だよ！応援ありがとう✨ {URLS['goods_url']}"
         elif any(word in message for word in ["観光", "スポット", "名所"]):
             response = random.choice(responses["niigata_spot_messages"])
         elif any(word in message for word in ["最近", "新しい", "変わった", "できた"]):
             response = random.choice(responses["niigata_updates"])
-        elif "メタメタ" in message or "滝雲" in message or "しおり" in message:
+        # 変更後:
+        elif "メタメタ" in message or "滝雲" in message or "しおり" in message or \
+            ("何歳" in message and ("滝雲" in message or "しおり" in message)):
             shiori_response = self.get_shiori_detailed_response(message)
             if shiori_response:
                 response = shiori_response
