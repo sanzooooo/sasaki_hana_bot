@@ -12,6 +12,7 @@ from google.cloud import storage
 import logging
 import google.auth
 from typing import Optional, Dict, List
+import payjp
 
 # ログ設定
 logging.basicConfig(
@@ -22,6 +23,9 @@ logger = logging.getLogger(__name__)
 
 # 環境変数の読み込み
 load_dotenv()
+
+# PAY.JPの初期化
+payjp.api_key = os.getenv('PAYJP_SECRET_KEY')
 
 # Flaskアプリケーションの初期化
 app = Flask(__name__)
