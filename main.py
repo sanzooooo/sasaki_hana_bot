@@ -365,7 +365,7 @@ class SakuragiPersonality:
 
         if message == "登録" or message == "支払い":
             try:
-                checkout_url = f"https://checkout.pay.jp/pay/pln_cbe7ec73db90554bf84f33e1832e"
+                checkout_url = "https://pay.jp/v2/vault?plan=pln_cbe7ec73db90554bf84f33e1832e&key=pk_test_sk_test_77d01b5e465e18f7c5a28319"
                 return f"咲々木花（∞）チャットサービスへようこそ！✨\n\n月額980円（税込）でご利用いただけます。\n\n以下のURLから登録をお願いします：\n{checkout_url}"
             except Exception as e:
                 logger.error(f"支払いリンク生成エラー: {str(e)}")
