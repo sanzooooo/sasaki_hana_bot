@@ -495,7 +495,7 @@ def handle_message(event):
         if len(ALLOWED_USERS) > 0 and user_id not in ALLOWED_USERS:
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(text="サービスを利用するには、まず 'myid' と送信してIDを確認し、X（旧Twitter）のDMにてIDを伝えてください✨")
+                TextSendMessage(text="サービスを利用するには、まず 'myid' とこのLINE上で送信してください。返信されたあなたのIDを確認し、咲々木花のX（旧Twitter）のDMにてIDを伝えてください✨")
             )
             logger.info("Unauthorized user attempted access")
             return
